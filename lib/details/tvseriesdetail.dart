@@ -157,7 +157,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(14, 14, 14, 1),
+      backgroundColor: const Color(0xFF001E3C),
       body: FutureBuilder(
           future: tvseriesdetailfunc(),
           builder: (context, snapshot) {
@@ -198,7 +198,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                               iconSize: 25,
                               color: Colors.white)
                         ],
-                        backgroundColor: Color.fromRGBO(18, 18, 18, 0.5),
+                        backgroundColor: const Color(0xFF0A1929).withValues(alpha: 0.95),
                         expandedHeight:
                             MediaQuery.of(context).size.height * 0.35,
                         pinned: true,
@@ -232,9 +232,19 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                                       margin: EdgeInsets.only(right: 10),
                                       padding: EdgeInsets.all(10),
                                       decoration: BoxDecoration(
-                                          color: Color.fromRGBO(25, 25, 25, 1),
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Colors.cyan.withValues(alpha: 0.2),
+                                              Colors.teal.withValues(alpha: 0.1),
+                                            ],
+                                          ),
                                           borderRadius:
-                                              BorderRadius.circular(10)),
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: Colors.cyan.withValues(alpha: 0.3),
+                                            width: 1,
+                                          ),
+                                      ),
                                       child: Text(
                                           TvSeriesDetails[index + 1]['genre']
                                               .toString()));

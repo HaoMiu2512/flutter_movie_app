@@ -71,8 +71,12 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
               height: 50,
               width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: Colors.cyan.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.all(Radius.circular(10)),
+                border: Border.all(
+                  color: Colors.cyan.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
               child: TextField(
                 autofocus: false,
@@ -114,10 +118,10 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                     },
                     icon: Icon(
                       Icons.arrow_back_ios_rounded,
-                      color: Colors.amber.withValues(alpha: 0.6),
+                      color: Colors.cyan.withValues(alpha: 0.6),
                     ),
                   ),
-                  prefixIcon: Icon(Icons.search, color: Colors.amber),
+                  prefixIcon: Icon(Icons.search, color: Colors.cyan),
                   hintText: 'Search',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: 0.2),
@@ -159,9 +163,18 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                   height: 180,
                                   width: MediaQuery.of(context).size.width,
                                   decoration: BoxDecoration(
-                                    color: Color.fromRGBO(20, 20, 20, 1),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Color(0xFF0A1929),
+                                        Color(0xFF001E3C),
+                                      ],
+                                    ),
                                     borderRadius: BorderRadius.all(
                                       Radius.circular(10),
+                                    ),
+                                    border: Border.all(
+                                      color: Colors.cyan.withValues(alpha: 0.2),
+                                      width: 1,
                                     ),
                                   ),
                                   child: Row(
@@ -211,7 +224,7 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                       // width:
                                                       //     100,
                                                       decoration: BoxDecoration(
-                                                        color: Colors.amber
+                                                        color: Colors.cyan
                                                             .withValues(
                                                               alpha: 0.2,
                                                             ),
@@ -221,6 +234,10 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                                 6,
                                                               ),
                                                             ),
+                                                        border: Border.all(
+                                                          color: Colors.cyan.withValues(alpha: 0.4),
+                                                          width: 1,
+                                                        ),
                                                       ),
                                                       child: Center(
                                                         child: Row(
@@ -231,7 +248,7 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                             Icon(
                                                               Icons.star,
                                                               color:
-                                                                  Colors.amber,
+                                                                  Colors.cyan,
                                                               size: 20,
                                                             ),
                                                             SizedBox(width: 5),
@@ -251,7 +268,7 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                       ),
                                                       height: 30,
                                                       decoration: BoxDecoration(
-                                                        color: Colors.amber
+                                                        color: Colors.cyan
                                                             .withValues(
                                                               alpha: 0.2,
                                                             ),
@@ -261,6 +278,10 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                                 8,
                                                               ),
                                                             ),
+                                                        border: Border.all(
+                                                          color: Colors.cyan.withValues(alpha: 0.4),
+                                                          width: 1,
+                                                        ),
                                                       ),
                                                       child: Center(
                                                         child: Row(
@@ -272,7 +293,7 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                                                               Icons
                                                                   .people_outline_sharp,
                                                               color:
-                                                                  Colors.amber,
+                                                                  Colors.cyan,
                                                               size: 20,
                                                             ),
                                                             SizedBox(width: 5),
@@ -318,7 +339,7 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                         );
                       } else {
                         return Center(
-                          child: CircularProgressIndicator(color: Colors.amber),
+                          child: CircularProgressIndicator(color: Colors.cyan),
                         );
                       }
                     },

@@ -13,7 +13,14 @@ Widget sliderlist(
     children: [
       Padding(
         padding: const EdgeInsets.only(left: 10, top: 15, bottom: 40),
-        child: Text(categorytitle.toString()),
+        child: Text(
+          categorytitle.toString(),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.cyan[300],
+          ),
+        ),
       ),
       SizedBox(
         height: 250,
@@ -72,8 +79,12 @@ Widget sliderlist(
                       padding: const EdgeInsets.only(top: 2, right: 6),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: Colors.cyan.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                            color: Colors.cyan.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.only(
@@ -86,7 +97,7 @@ Widget sliderlist(
                             children: [
                               const Icon(
                                 Icons.star,
-                                color: Colors.yellow,
+                                color: Colors.amber,
                                 size: 15,
                               ),
                               SizedBox(width: 2),

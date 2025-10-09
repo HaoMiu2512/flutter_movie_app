@@ -92,7 +92,7 @@ class _MoviesState extends State<Movies> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
-                child: CircularProgressIndicator(color: Colors.amber.shade400));
+                child: CircularProgressIndicator(color: Colors.cyan.shade400));
           } else {
             return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

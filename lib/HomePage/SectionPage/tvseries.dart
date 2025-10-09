@@ -83,7 +83,7 @@ class _TvSeriesState extends State<TvSeries> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
-            child: CircularProgressIndicator(color: Colors.amber.shade400),
+            child: CircularProgressIndicator(color: Colors.cyan.shade400),
           );
         } else {
           return Column(

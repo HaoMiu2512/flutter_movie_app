@@ -54,7 +54,7 @@ class _UpcomingState extends State<Upcoming> {
             ],
           );
         } else {
-          return Center(child: CircularProgressIndicator(color: Colors.amber));
+          return Center(child: CircularProgressIndicator(color: Colors.cyan));
         }
       },
     );

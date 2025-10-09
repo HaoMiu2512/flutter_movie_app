@@ -132,7 +132,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(14, 14, 14, 1),
+      backgroundColor: const Color(0xFF001E3C),
       body: FutureBuilder(
         future: Moviedetails(),
         builder: (context, snapshot) {
@@ -164,7 +164,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
                       color: Colors.white,
                     ),
                   ],
-                  backgroundColor: Color.fromRGBO(18, 18, 18, 0.5),
+                  backgroundColor: const Color(0xFF0A1929).withValues(alpha: 0.95),
                   centerTitle: false,
                   pinned: true,
                   expandedHeight: MediaQuery.of(context).size.height * 0.4,
@@ -198,8 +198,17 @@ class _MoviesDetailState extends State<MoviesDetail> {
                                     margin: EdgeInsets.only(right: 10),
                                     padding: EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Color.fromRGBO(25, 25, 25, 1),
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.cyan.withValues(alpha: 0.2),
+                                          Colors.teal.withValues(alpha: 0.1),
+                                        ],
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: Colors.cyan.withValues(alpha: 0.3),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Text(MoviesGeneres[index]),
                                   );
@@ -215,8 +224,17 @@ class _MoviesDetailState extends State<MoviesDetail> {
                               margin: EdgeInsets.only(left: 10, top: 10),
                               height: 40,
                               decoration: BoxDecoration(
-                                color: Color.fromRGBO(25, 25, 25, 1),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.cyan.withValues(alpha: 0.2),
+                                    Colors.teal.withValues(alpha: 0.1),
+                                  ],
+                                ),
                                 borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.cyan.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
                               ),
                               child: Text('${MovieDetails[0]['runtime']} min'),
                             ),
