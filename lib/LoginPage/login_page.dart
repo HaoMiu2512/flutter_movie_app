@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../HomePage/HomePage.dart';
 import 'register_page.dart';
+import 'forgot_password_page.dart';
+import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
@@ -30,15 +33,11 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       try {
-        // TODO: Add Firebase Authentication here
-        // Example:
-        // await FirebaseAuth.instance.signInWithEmailAndPassword(
-        //   email: _emailController.text.trim(),
-        //   password: _passwordController.text,
-        // );
-
-        // For now, simulate a delay
-        await Future.delayed(const Duration(seconds: 1));
+        // Sign in with Firebase Authentication
+        await _authService.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
         // Extract username from email (part before @)
         String username = _emailController.text.split('@')[0];
@@ -55,8 +54,9 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: ${e.toString()}'),
+              content: Text(e.toString()),
               backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -253,7 +253,12 @@ class _LoginPageState extends State<LoginPage> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          // Handle forgot password
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
                         },
                         child: Text(
                           'Forgot Password?',

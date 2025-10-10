@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../HomePage/HomePage.dart';
+import '../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,6 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
@@ -32,20 +34,26 @@ class _RegisterPageState extends State<RegisterPage> {
       });
 
       try {
-        // TODO: Add Firebase Authentication here
-        // Example:
-        // await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        //   email: _emailController.text.trim(),
-        //   password: _passwordController.text,
-        // );
-
-        // For now, simulate a delay
-        await Future.delayed(const Duration(seconds: 1));
+        // Create user with Firebase Authentication
+        await _authService.registerWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
         // Extract username from email (part before @)
         String username = _emailController.text.split('@')[0];
 
         if (mounted) {
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Đăng ký thành công!'),
+              backgroundColor: Colors.green[600],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to HomePage
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -57,8 +65,9 @@ class _RegisterPageState extends State<RegisterPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Registration failed: ${e.toString()}'),
+              content: Text(e.toString()),
               backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 3),
             ),
           );
         }
