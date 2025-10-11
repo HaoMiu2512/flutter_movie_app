@@ -47,7 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Đăng ký thành công!'),
+              content: const Text('Registration successful!'),
               backgroundColor: Colors.green[600],
               duration: const Duration(seconds: 2),
             ),

@@ -35,7 +35,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
-                'Email khôi phục mật khẩu đã được gửi!\nVui lòng kiểm tra hộp thư của bạn.',
+                'Password reset email has been sent!\nPlease check your inbox.',
               ),
               backgroundColor: Colors.green[600],
               duration: const Duration(seconds: 4),
@@ -113,7 +113,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                     // Title
                     Text(
-                      'Quên Mật Khẩu?',
+                      'Forgot Password?',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -127,7 +127,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
-                        'Nhập email của bạn và chúng tôi sẽ gửi link để đặt lại mật khẩu',
+                        'Enter your email and we will send you a link to reset your password',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -170,11 +170,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Vui lòng nhập email';
+                          return 'Please enter email';
                         }
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                             .hasMatch(value)) {
-                          return 'Email không hợp lệ';
+                          return 'Invalid email address';
                         }
                         return null;
                       },
@@ -213,7 +213,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   Icon(Icons.send, size: 20),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'GỬI EMAIL KHÔI PHỤC',
+                                    'SEND RESET EMAIL',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -231,13 +231,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Nhớ mật khẩu? ',
+                          'Remember password? ',
                           style: TextStyle(color: Colors.grey[400]),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           child: Text(
-                            'Đăng nhập',
+                            'Sign In',
                             style: TextStyle(
                               color: Colors.cyan[400],
                               fontWeight: FontWeight.bold,
@@ -270,7 +270,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Email có thể mất vài phút để đến. Kiểm tra cả thư mục spam.',
+                              'Email may take a few minutes to arrive. Check your spam folder too.',
                               style: TextStyle(
                                 color: Colors.grey[300],
                                 fontSize: 13,

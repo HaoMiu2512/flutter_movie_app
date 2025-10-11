@@ -60,27 +60,27 @@ class AuthService {
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
-        return 'Không tìm thấy tài khoản với email này.';
+        return 'No account found with this email.';
       case 'wrong-password':
-        return 'Mật khẩu không chính xác.';
+        return 'Incorrect password.';
       case 'email-already-in-use':
-        return 'Email này đã được sử dụng.';
+        return 'This email is already in use.';
       case 'invalid-email':
-        return 'Email không hợp lệ.';
+        return 'Invalid email address.';
       case 'weak-password':
-        return 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
+        return 'Password is too weak. Please choose a stronger password.';
       case 'operation-not-allowed':
-        return 'Chức năng này chưa được kích hoạt.';
+        return 'This operation is not allowed.';
       case 'user-disabled':
-        return 'Tài khoản này đã bị vô hiệu hóa.';
+        return 'This account has been disabled.';
       case 'too-many-requests':
-        return 'Quá nhiều yêu cầu. Vui lòng thử lại sau.';
+        return 'Too many requests. Please try again later.';
       case 'network-request-failed':
-        return 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
+        return 'Network connection error. Please check your internet connection.';
       case 'invalid-credential':
-        return 'Thông tin đăng nhập không hợp lệ.';
+        return 'Invalid credentials.';
       default:
-        return 'Đã xảy ra lỗi: ${e.message ?? e.code}';
+        return 'An error occurred: ${e.message ?? e.code}';
     }
   }
 
