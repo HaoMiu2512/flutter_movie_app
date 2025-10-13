@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Flutter Movie App</string>
+
+    <!-- Facebook Configuration -->
+    <!-- You need to create a Facebook App at https://developers.facebook.com/ -->
+    <!-- Replace YOUR_APP_ID and YOUR_CLIENT_TOKEN with your actual values -->
+    <string name="facebook_app_id">YOUR_APP_ID</string>
+    <string name="facebook_client_token">YOUR_CLIENT_TOKEN</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_APP_ID</string>
+</resources>

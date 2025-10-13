@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../HomePage/HomePage.dart';
 import '../services/auth_service.dart';
+import 'phone_auth_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -81,34 +82,122 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  Future<void> _handlePhoneLogin() async {
-    // TODO: Implement Phone Authentication with Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Phone Authentication - Coming soon'),
-        backgroundColor: Colors.cyan[600],
+  Future<void> _handlePhoneRegister() async {
+    // Navigate to Phone Authentication page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PhoneAuthPage(),
       ),
     );
   }
 
   Future<void> _handleGoogleLogin() async {
-    // TODO: Implement Google Sign-In with Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Google Sign-In - Coming soon'),
-        backgroundColor: Colors.cyan[600],
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Sign in with Google
+      final userCredential = await _authService.signInWithGoogle();
+
+      // Get user information
+      String username = userCredential.user?.displayName ??
+                        userCredential.user?.email?.split('@')[0] ??
+                        'User';
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Google Sign-In successful!'),
+            backgroundColor: Colors.green[600],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to HomePage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(username: username),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Only show error if it's not a cancellation
+        if (!e.toString().contains('cancelled')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _handleFacebookLogin() async {
-    // TODO: Implement Facebook Sign-In with Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Facebook Sign-In - Coming soon'),
-        backgroundColor: Colors.cyan[600],
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Sign in with Facebook
+      final userCredential = await _authService.signInWithFacebook();
+
+      // Get user information
+      String username = userCredential.user?.displayName ??
+                        userCredential.user?.email?.split('@')[0] ??
+                        'User';
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Facebook Sign-In successful!'),
+            backgroundColor: Colors.green[600],
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to HomePage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(username: username),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        // Only show error if it's not a cancellation
+        if (!e.toString().contains('cancelled')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: Colors.red[600],
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -396,10 +485,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     // Social Login Buttons
                     Row(
                       children: [
-                        // Phone Login Button
+                        // Phone Register Button
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _handlePhoneLogin,
+                            onPressed: _handlePhoneRegister,
                             icon: Icon(Icons.phone_android,
                                 color: Colors.cyan[400], size: 20),
                             label: Text(

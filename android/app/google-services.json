@@ -12,7 +12,20 @@
           "package_name": "com.example.flutter_movie_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1049565528209-mflukqbjpqk1jkvfso8a8n0m732g9etn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_movie_app",
+            "certificate_hash": "735b21d2dac4d07f85a3937f0341baf083976402"
+          }
+        },
+        {
+          "client_id": "1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBHf1C-MYTAAUrRBd6XdLrX5FkcvyXSpG4"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1049565528209-661h8m227h1uj1h568fjkthig34h9dam.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterMovieApp"
+              }
+            }
+          ]
         }
       }
     }
