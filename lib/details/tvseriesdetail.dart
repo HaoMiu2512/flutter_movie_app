@@ -7,8 +7,8 @@ import 'package:flutter_movie_app/reapeatedfunction/slider.dart';
 import 'package:flutter_movie_app/HomePage/HomePage.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/apikey/apikey.dart';
-// import 'package:flutter_dotenv/flutter_dotenv.dart';
-
+import 'package:flutter_movie_app/services/favorites_service.dart';
+import 'package:flutter_movie_app/models/movie.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class TvSeriesDetail extends StatefulWidget {
@@ -26,6 +26,10 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   List<Map<String, dynamic>> similarserieslist = [];
   List<Map<String, dynamic>> recommendserieslist = [];
   List<Map<String, dynamic>> seriestrailerslist = [];
+
+  // Favorites
+  final FavoritesService _favoritesService = FavoritesService();
+  bool _isFavorite = false;
 
   Future<void> tvseriesdetailfunc() async {
     var tvseriesdetailurl =
@@ -143,9 +147,51 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
     print(seriestrailerslist);
   }
 
+  Future<void> _checkFavoriteStatus() async {
+    final isFav = await _favoritesService.isFavoriteMovie(
+      widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      'tv',
+    );
+    setState(() {
+      _isFavorite = isFav;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (TvSeriesDetails.isEmpty) return;
+
+    final movie = Movie(
+      id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      title: TvSeriesDetails[0]['title'],
+      posterPath: TvSeriesDetails[0]['backdrop_path'] ?? '',
+      overview: TvSeriesDetails[0]['overview'],
+      voteAverage: (TvSeriesDetails[0]['vote_average'] as num).toDouble(),
+      releaseDate: TvSeriesDetails[0]['releasedate'],
+      mediaType: 'tv',
+    );
+
+    await _favoritesService.toggleFavorite(movie);
+    await _checkFavoriteStatus();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite
+                ? 'Added to favorites'
+                : 'Removed from favorites',
+          ),
+          backgroundColor: _isFavorite ? Colors.green[700] : Colors.orange[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _checkFavoriteStatus();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: [SystemUiOverlay.bottom]);
     SystemChrome.setPreferredOrientations([
@@ -185,6 +231,14 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                                 iconSize: 28,
                                 color: Colors.white),
                         actions: [
+                          IconButton(
+                            onPressed: _toggleFavorite,
+                            icon: Icon(
+                              _isFavorite ? Icons.favorite : Icons.favorite_border,
+                            ),
+                            iconSize: 28,
+                            color: _isFavorite ? Colors.red : Colors.white,
+                          ),
                           IconButton(
                               onPressed: () {
 

@@ -35,6 +35,8 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
             'media_type': searchjson[i]['media_type'],
             'popularity': searchjson[i]['popularity'],
             'overview': searchjson[i]['overview'],
+            'title': searchjson[i]['title'] ?? searchjson[i]['name'] ?? 'Unknown',
+            'release_date': searchjson[i]['release_date'] ?? searchjson[i]['first_air_date'] ?? '',
           });
 
           if (searchresult.length > 20) {
@@ -146,194 +148,8 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                             scrollDirection: Axis.vertical,
                             physics: BouncingScrollPhysics(),
                             itemBuilder: (context, index) {
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => Descriptioncheckui(
-                                        searchresult[index]['id'],
-                                        searchresult[index]['media_type'],
-                                      ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  margin: EdgeInsets.only(top: 4, bottom: 4),
-                                  height: 180,
-                                  width: MediaQuery.of(context).size.width,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0xFF0A1929),
-                                        Color(0xFF001E3C),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(10),
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.cyan.withValues(alpha: 0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width:
-                                            MediaQuery.of(context).size.width *
-                                            0.4,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.all(
-                                            Radius.circular(10),
-                                          ),
-                                          image: DecorationImage(
-                                            image: NetworkImage(
-                                              'https://image.tmdb.org/t/p/w500${searchresult[index]['poster_path']}',
-                                            ),
-                                            fit: BoxFit.fill,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 20),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Container(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              ///////////////////////
-                                              //media type
-                                              Container(
-                                                alignment: Alignment.topCenter,
-                                                child: Text(
-                                                  '${searchresult[index]['media_type']}',
-                                                ),
-                                              ),
-
-                                              Container(
-                                                child: Row(
-                                                  children: [
-                                                    //vote average box
-                                                    Container(
-                                                      padding: EdgeInsets.all(
-                                                        5,
-                                                      ),
-                                                      height: 30,
-                                                      // width:
-                                                      //     100,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.cyan
-                                                            .withValues(
-                                                              alpha: 0.2,
-                                                            ),
-                                                        borderRadius:
-                                                            BorderRadius.all(
-                                                              Radius.circular(
-                                                                6,
-                                                              ),
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.cyan.withValues(alpha: 0.4),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: Center(
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.star,
-                                                              color:
-                                                                  Colors.cyan,
-                                                              size: 20,
-                                                            ),
-                                                            SizedBox(width: 5),
-                                                            Text(
-                                                              '${searchresult[index]['vote_average']}',
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 10),
-
-                                                    //popularity
-                                                    Container(
-                                                      padding: EdgeInsets.all(
-                                                        5,
-                                                      ),
-                                                      height: 30,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.cyan
-                                                            .withValues(
-                                                              alpha: 0.2,
-                                                            ),
-                                                        borderRadius:
-                                                            BorderRadius.all(
-                                                              Radius.circular(
-                                                                8,
-                                                              ),
-                                                            ),
-                                                        border: Border.all(
-                                                          color: Colors.cyan.withValues(alpha: 0.4),
-                                                          width: 1,
-                                                        ),
-                                                      ),
-                                                      child: Center(
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons
-                                                                  .people_outline_sharp,
-                                                              color:
-                                                                  Colors.cyan,
-                                                              size: 20,
-                                                            ),
-                                                            SizedBox(width: 5),
-                                                            Text(
-                                                              '${searchresult[index]['popularity']}',
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
-
-                                                    //
-                                                  ],
-                                                ),
-                                              ),
-
-                                              SizedBox(
-                                                width:
-                                                    MediaQuery.of(
-                                                      context,
-                                                    ).size.width *
-                                                    0.4,
-                                                height: 85,
-                                                child: Text(
-                                                  textAlign: TextAlign.left,
-                                                  ' ${searchresult[index]['overview']}',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
+                              final result = searchresult[index];
+                              return _buildSearchResultCard(context, result);
                             },
                           ),
                         );
@@ -346,6 +162,182 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                   )
                 : Container(),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Build beautiful search result card similar to favorites page
+  Widget _buildSearchResultCard(BuildContext context, Map<String, dynamic> result) {
+    return Card(
+      color: const Color(0xFF001E3C),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.cyan.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      elevation: 4,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => Descriptioncheckui(
+                result['id'],
+                result['media_type'],
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Poster Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: result['poster_path'] != null
+                    ? Image.network(
+                        'https://image.tmdb.org/t/p/w200${result['poster_path']}',
+                        width: 80,
+                        height: 120,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 80,
+                            height: 120,
+                            color: Colors.grey[800],
+                            child: const Icon(
+                              Icons.movie,
+                              color: Colors.grey,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 80,
+                        height: 120,
+                        color: Colors.grey[800],
+                        child: const Icon(
+                          Icons.movie,
+                          color: Colors.grey,
+                          size: 40,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 16),
+
+              // Movie Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      result['title'] ?? 'Unknown',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Media Type Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: result['media_type'] == 'movie'
+                            ? Colors.blue.withValues(alpha: 0.3)
+                            : Colors.purple.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: result['media_type'] == 'movie'
+                              ? Colors.blue
+                              : Colors.purple,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        result['media_type'] == 'movie' ? 'MOVIE' : 'TV SERIES',
+                        style: TextStyle(
+                          color: result['media_type'] == 'movie'
+                              ? Colors.blue[200]
+                              : Colors.purple[200],
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Rating & Release Date
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          result['vote_average'] != null
+                              ? result['vote_average'].toStringAsFixed(1)
+                              : 'N/A',
+                          style: const TextStyle(
+                            color: Colors.amber,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        const Icon(
+                          Icons.calendar_today,
+                          color: Colors.grey,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            result['release_date'] != null && result['release_date'].toString().isNotEmpty
+                                ? result['release_date'].toString().split('-')[0]
+                                : 'N/A',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Overview
+                    Text(
+                      result['overview'] ?? 'No description available',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

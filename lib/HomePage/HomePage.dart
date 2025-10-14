@@ -11,6 +11,8 @@ import 'package:flutter_movie_app/HomePage/SectionPage/movies.dart';
 import 'package:flutter_movie_app/HomePage/SectionPage/tvseries.dart';
 import 'package:flutter_movie_app/HomePage/SectionPage/upcoming.dart';
 import 'package:flutter_movie_app/LoginPage/login_page.dart';
+import 'package:flutter_movie_app/pages/favorites_page.dart';
+import 'package:flutter_movie_app/pages/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   final String? username;
@@ -168,6 +170,72 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
             onTap: () {
               Navigator.pop(context);
+            },
+          ),
+
+          // Favorites button
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.favorite,
+                color: Colors.red[400],
+                size: 24,
+              ),
+            ),
+            title: const Text(
+              'My Favorites',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FavoritesPage(),
+                ),
+              );
+            },
+          ),
+
+          // Profile button
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.person,
+                color: Colors.purple[400],
+                size: 24,
+              ),
+            ),
+            title: const Text(
+              'Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfilePage(),
+                ),
+              );
             },
           ),
 

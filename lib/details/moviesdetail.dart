@@ -7,6 +7,8 @@ import 'package:flutter_movie_app/HomePage/homepage.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/reapeatedfunction/userreview.dart';
+import 'package:flutter_movie_app/services/favorites_service.dart';
+import 'package:flutter_movie_app/models/movie.dart';
 
 class MoviesDetail extends StatefulWidget {
   var id;
@@ -24,6 +26,57 @@ class _MoviesDetailState extends State<MoviesDetail> {
   List<Map<String, dynamic>> movietrailerslist = [];
 
   List MoviesGeneres = [];
+
+  // Favorites
+  final FavoritesService _favoritesService = FavoritesService();
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final isFav = await _favoritesService.isFavoriteMovie(
+      widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      'movie',
+    );
+    setState(() {
+      _isFavorite = isFav;
+    });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (MovieDetails.isEmpty) return;
+
+    final movie = Movie(
+      id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      title: MovieDetails[0]['title'],
+      posterPath: MovieDetails[0]['backdrop_path'] ?? '',
+      overview: MovieDetails[0]['overview'],
+      voteAverage: (MovieDetails[0]['vote_average'] as num).toDouble(),
+      releaseDate: MovieDetails[0]['release_date'],
+      mediaType: 'movie',
+    );
+
+    await _favoritesService.toggleFavorite(movie);
+    await _checkFavoriteStatus();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite
+                ? 'Added to favorites'
+                : 'Removed from favorites',
+          ),
+          backgroundColor: _isFavorite ? Colors.green[700] : Colors.orange[700],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   Future Moviedetails() async {
     var moviedetailurl =
@@ -151,6 +204,14 @@ class _MoviesDetailState extends State<MoviesDetail> {
                     color: Colors.white,
                   ),
                   actions: [
+                    IconButton(
+                      onPressed: _toggleFavorite,
+                      icon: Icon(
+                        _isFavorite ? Icons.favorite : Icons.favorite_border,
+                      ),
+                      iconSize: 28,
+                      color: _isFavorite ? Colors.red : Colors.white,
+                    ),
                     IconButton(
                       onPressed: () {
                         Navigator.pushAndRemoveUntil(

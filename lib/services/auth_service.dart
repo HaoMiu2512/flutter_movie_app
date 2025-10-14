@@ -1,17 +1,27 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // Web Client ID from google-services.json (client_type: 3)
-    // This is required for Android to get ID token for Firebase
-    // For Web, the clientId is also set in web/index.html meta tag
-    serverClientId: '1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com',
-    clientId: '1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com',
-  );
+  late final GoogleSignIn _googleSignIn;
   final FacebookAuth _facebookAuth = FacebookAuth.instance;
+
+  AuthService() {
+    // Configure GoogleSignIn based on platform
+    if (kIsWeb) {
+      // For Web, don't use serverClientId (it's not supported)
+      _googleSignIn = GoogleSignIn(
+        clientId: '1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com',
+      );
+    } else {
+      // For Mobile (Android/iOS), use serverClientId
+      _googleSignIn = GoogleSignIn(
+        serverClientId: '1049565528209-s5e3g3feme8t939d0ho9p17bms65plrh.apps.googleusercontent.com',
+      );
+    }
+  }
 
   // Get current user
   User? get currentUser => _auth.currentUser;
