@@ -98,15 +98,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             child: SafeArea(
               child: Column(
                 children: [
-                  // Logo
+                  // Flick Logo
                   Container(
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Colors.cyan, Colors.tealAccent],
-                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.cyan.withValues(alpha: 0.5),
@@ -115,10 +112,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.movie_filter,
-                      size: 45,
-                      color: Colors.white,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/Flick.jpg',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

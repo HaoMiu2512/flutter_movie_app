@@ -197,18 +197,27 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showAboutDialog() {
     showAboutDialog(
       context: context,
-      applicationName: 'Flutter Movie App',
+      applicationName: 'Flick',
       applicationVersion: '$_appVersion ($_buildNumber)',
       applicationIcon: Container(
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.cyan, Colors.tealAccent],
-          ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.cyan.withValues(alpha: 0.3),
+              blurRadius: 10,
+            ),
+          ],
         ),
-        child: const Icon(Icons.movie, color: Colors.white, size: 30),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            'assets/images/Flick.jpg',
+            fit: BoxFit.cover,
+          ),
+        ),
       ),
       children: [
         const SizedBox(height: 16),
@@ -218,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         const SizedBox(height: 8),
         const Text(
-          '© 2024 Flutter Movie App',
+          '© 2024 Flick',
           style: TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],
@@ -314,7 +323,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () {
                   showLicensePage(
                     context: context,
-                    applicationName: 'Flutter Movie App',
+                    applicationName: 'Flick',
                     applicationVersion: _appVersion,
                   );
                 },
@@ -331,9 +340,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Colors.cyan, Colors.tealAccent],
-                      ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -343,11 +349,17 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.movie, color: Colors.white, size: 40),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/Flick.jpg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Flutter Movie App',
+                    'Flick',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,

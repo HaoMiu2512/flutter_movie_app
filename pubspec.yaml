@@ -33,3 +33,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/Flick.jpg
+    - assets/images/Flick_NoInfo.jpg

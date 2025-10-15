@@ -203,31 +203,47 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // App Logo/Title
-                    Icon(
-                      Icons.movie_rounded,
-                      size: 80,
-                      color: Colors.cyan[400],
+                    // Flick Logo
+                    Container(
+                      width: 150,
+                      height: 150,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.cyan.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/Flick_NoInfo.jpg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Movie App',
+                    const Text(
+                      'Welcome Back',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        letterSpacing: 2,
+                        letterSpacing: 1,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Welcome Back',
+                      'Sign in to continue',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.cyan[300],
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
                     // Email Field
                     TextFormField(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_movie_app/LoginPage/login_page.dart';
+import 'package:flutter_movie_app/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
@@ -29,8 +29,8 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Movie App',
-      home: LoginPage(),
+      title: 'Flick',
+      home: const SplashScreen(),
     );
   }
 }
