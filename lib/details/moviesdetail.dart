@@ -182,6 +182,80 @@ class _MoviesDetailState extends State<MoviesDetail> {
     print(movietrailerslist);
   }
 
+  Widget _buildInfoCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF0A1929),
+            const Color(0xFF0F1922).withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatCurrency(dynamic amount) {
+    if (amount == null || amount == 0) return 'N/A';
+    final value = amount is int ? amount : int.tryParse(amount.toString()) ?? 0;
+    if (value >= 1000000000) {
+      return '\$${(value / 1000000000).toStringAsFixed(2)}B';
+    } else if (value >= 1000000) {
+      return '\$${(value / 1000000).toStringAsFixed(2)}M';
+    } else if (value >= 1000) {
+      return '\$${(value / 1000).toStringAsFixed(2)}K';
+    }
+    return '\$$value';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -191,7 +265,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return CustomScrollView(
-              physics: BouncingScrollPhysics(),
+              physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
                   automaticallyImplyLeading: false,
@@ -241,95 +315,241 @@ class _MoviesDetailState extends State<MoviesDetail> {
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate([
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.only(left: 10, top: 10),
-                              height: 50,
-                              width: MediaQuery.of(context).size.width,
-                              child: ListView.builder(
-                                physics: BouncingScrollPhysics(),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: MoviesGeneres.length,
-                                itemBuilder: (context, index) {
-                                  //generes box
-                                  return Container(
-                                    margin: EdgeInsets.only(right: 10),
-                                    padding: EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.cyan.withValues(alpha: 0.2),
-                                          Colors.teal.withValues(alpha: 0.1),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: Colors.cyan.withValues(alpha: 0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(MoviesGeneres[index]),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(10),
-                              margin: EdgeInsets.only(left: 10, top: 10),
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.cyan.withValues(alpha: 0.2),
-                                    Colors.teal.withValues(alpha: 0.1),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.cyan.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Text('${MovieDetails[0]['runtime']} min'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    // Movie Title
                     Padding(
-                      padding: EdgeInsets.only(left: 20, top: 10),
-                      child: Text('Movie Story :'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(left: 20, top: 10),
-                      child: Text(MovieDetails[0]['overview'].toString()),
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                      child: Text(
+                        MovieDetails[0]['title'],
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
 
+                    // Rating and Runtime Row
                     Padding(
-                      padding: EdgeInsets.only(left: 20, top: 10),
-                      child: UserReview(reviewDetails: UserReviews),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          // Rating Card
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.amber.withValues(alpha: 0.2),
+                                  Colors.orange.withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.amber.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 20),
+                                const SizedBox(width: 6),
+                                Text(
+                                  MovieDetails[0]['vote_average'].toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const Text(
+                                  ' / 10',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Runtime Card
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.cyan.withValues(alpha: 0.2),
+                                  Colors.teal.withValues(alpha: 0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.cyan.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.access_time, color: Colors.cyan, size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${MovieDetails[0]['runtime']} min',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
+                    // Genres
                     Padding(
-                      padding: EdgeInsets.only(left: 20, top: 20),
-                      child: Text(
-                        'Release Date : ${MovieDetails[0]['release_date']}',
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: MoviesGeneres.map((genre) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.purple.withValues(alpha: 0.3),
+                                  Colors.deepPurple.withValues(alpha: 0.2),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.purple.withValues(alpha: 0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              genre,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                    // Overview Section
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Colors.cyan, Colors.teal],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Overview',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.only(left: 20, top: 20),
-                      child: Text('Budget : ${MovieDetails[0]['budget']}'),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Text(
+                        MovieDetails[0]['overview'].toString(),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.6,
+                          color: Colors.white70,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
+
+                    // Movie Info Cards
                     Padding(
-                      padding: EdgeInsets.only(left: 20, top: 20),
-                      child: Text('Revenue : ${MovieDetails[0]['revenue']}'),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Column(
+                        children: [
+                          _buildInfoCard(
+                            icon: Icons.calendar_today,
+                            iconColor: Colors.blue,
+                            title: 'Release Date',
+                            value: MovieDetails[0]['release_date'],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoCard(
+                            icon: Icons.attach_money,
+                            iconColor: Colors.green,
+                            title: 'Budget',
+                            value: _formatCurrency(MovieDetails[0]['budget']),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoCard(
+                            icon: Icons.trending_up,
+                            iconColor: Colors.orange,
+                            title: 'Revenue',
+                            value: _formatCurrency(MovieDetails[0]['revenue']),
+                          ),
+                        ],
+                      ),
                     ),
+
+                    // User Reviews
+                    if (UserReviews.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.cyan, Colors.teal],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'User Reviews',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (UserReviews.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20, top: 10),
+                        child: UserReview(reviewDetails: UserReviews),
+                      ),
                     sliderlist(
                       similarmovieslist,
                       "Similar Movies",

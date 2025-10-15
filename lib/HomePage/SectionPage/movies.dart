@@ -18,14 +18,14 @@ class _MoviesState extends State<Movies> {
   List<Map<String, dynamic>> topratedmovies = [];
   List<Map<String, dynamic>> latestmovies = [];
 
-  Future<void> moviesfunction() async {
+  final String popularmoviesurl =
+      'https://api.themoviedb.org/3/movie/popular?api_key=$apikey';
+  final String nowplayingmoviesurl =
+      'https://api.themoviedb.org/3/movie/now_playing?api_key=$apikey';
+  final String topratedmoviesurl =
+      'https://api.themoviedb.org/3/movie/top_rated?api_key=$apikey';
 
-    var popularmoviesurl =
-        'https://api.themoviedb.org/3/movie/popular?api_key=${apikey}';
-    var nowplayingmoviesurl =
-        'https://api.themoviedb.org/3/movie/now_playing?api_key=${apikey}';
-    var topratedmoviesurl =
-        'https://api.themoviedb.org/3/movie/top_rated?api_key=${apikey}';
+  Future<void> moviesfunction() async {
     var popularmoviesresponse = await http.get(Uri.parse(popularmoviesurl));
     if (popularmoviesresponse.statusCode == 200) {
       var tempdata = jsonDecode(popularmoviesresponse.body);
@@ -97,9 +97,30 @@ class _MoviesState extends State<Movies> {
             return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  sliderlist(popularmovies, "Popular Now", "movie", 20),
-                  sliderlist(nowplayingmovies, "Now Playing", "movie", 20),
-                  sliderlist(topratedmovies, "Top Rated", "movie", 20)
+                  sliderlist(
+                    popularmovies,
+                    "Popular Now",
+                    "movie",
+                    20,
+                    apiEndpoint: popularmoviesurl,
+                    context: context,
+                  ),
+                  sliderlist(
+                    nowplayingmovies,
+                    "Now Playing",
+                    "movie",
+                    20,
+                    apiEndpoint: nowplayingmoviesurl,
+                    context: context,
+                  ),
+                  sliderlist(
+                    topratedmovies,
+                    "Top Rated",
+                    "movie",
+                    20,
+                    apiEndpoint: topratedmoviesurl,
+                    context: context,
+                  )
                 ]);
           }
         });

@@ -13,6 +13,7 @@ import 'package:flutter_movie_app/HomePage/SectionPage/upcoming.dart';
 import 'package:flutter_movie_app/LoginPage/login_page.dart';
 import 'package:flutter_movie_app/pages/favorites_page.dart';
 import 'package:flutter_movie_app/pages/profile_page.dart';
+import 'package:flutter_movie_app/pages/settings_page.dart';
 
 class HomePage extends StatefulWidget {
   final String? username;
@@ -75,8 +76,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildDrawer(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Drawer(
-      backgroundColor: const Color(0xFF0A1929),
+      backgroundColor: isDark ? const Color(0xFF0A1929) : Colors.white,
       child: Column(
         children: [
           // Header với logo và tên người dùng
@@ -234,6 +236,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfilePage(),
+                ),
+              );
+            },
+          ),
+
+          // Settings button
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.settings,
+                color: Colors.blue[400],
+                size: 24,
+              ),
+            ),
+            title: const Text(
+              'Settings',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
                 ),
               );
             },

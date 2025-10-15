@@ -13,13 +13,15 @@ class Upcoming extends StatefulWidget {
 
 class _UpcomingState extends State<Upcoming> {
   List<Map<String, dynamic>> getUpcomminglist = [];
+
+  final String upcomingmoviesurl =
+      'https://api.themoviedb.org/3/movie/upcoming?api_key=$apikey';
+
   Future<void> getUpcomming() async {
     // var url = Uri.parse(
     //     'https://api.themoviedb.org/3/movie/upcoming?api_key=${dotenv.env['apikey']}');4
 
-    var url = Uri.parse(
-      'https://api.themoviedb.org/3/movie/upcoming?api_key=$apikey',
-    );
+    var url = Uri.parse(upcomingmoviesurl);
     var response = await http.get(url);
     if (response.statusCode == 200) {
       var json = jsonDecode(response.body);
@@ -46,7 +48,14 @@ class _UpcomingState extends State<Upcoming> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              sliderlist(getUpcomminglist, "Upcomming", "movie", 20),
+              sliderlist(
+                getUpcomminglist,
+                "Upcomming",
+                "movie",
+                20,
+                apiEndpoint: upcomingmoviesurl,
+                context: context,
+              ),
               Padding(
                 padding: const EdgeInsets.only(left: 10.0, top: 15, bottom: 40),
                 child: Text("Many More Coming Soon... "),

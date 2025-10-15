@@ -1,27 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_movie_app/details/moviesdetail.dart';
 import 'package:flutter_movie_app/details/tvseriesdetail.dart';
+import '../pages/view_all_page.dart';
 
 Widget sliderlist(
   List firstlistname,
   String categorytitle,
   String type,
-  int itemcount,
-) {
+  int itemcount, {
+  String? apiEndpoint,
+  BuildContext? context,
+}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Padding(
-        padding: const EdgeInsets.only(left: 10, top: 15, bottom: 40),
-        child: Text(
-          categorytitle.toString(),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.cyan[300],
-          ),
+        padding: const EdgeInsets.only(left: 10, top: 15, right: 10, bottom: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              categorytitle.toString(),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.cyan[300],
+              ),
+            ),
+            if (apiEndpoint != null && context != null)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context!,
+                    MaterialPageRoute(
+                      builder: (context) => ViewAllPage(
+                        title: categorytitle,
+                        apiEndpoint: apiEndpoint,
+                        mediaType: type,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.cyan.withValues(alpha: 0.3), Colors.teal.withValues(alpha: 0.2)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.cyan.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'View All',
+                        style: TextStyle(
+                          color: Colors.cyan[200],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.cyan[200],
+                        size: 12,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
+      const SizedBox(height: 30),
       SizedBox(
         height: 250,
         child: ListView.builder(

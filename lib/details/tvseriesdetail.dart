@@ -188,6 +188,67 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
     }
   }
 
+  Widget _buildInfoCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF0A1929),
+            const Color(0xFF0F1922).withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withValues(alpha: 0.6),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -267,103 +328,205 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                         )),
                     SliverList(
                         delegate: SliverChildListDelegate([
-                      // addtofavoriate(
-                      //   id: widget.id,
-                      //   type: 'tv',
-                      //   Details: TvSeriesDetails,
-                      // ),
-                      Row(children: [
-                        Container(
-                            padding: EdgeInsets.only(left: 10, top: 10),
-                            height: 50,
-                            width: MediaQuery.of(context).size.width,
-                            child: ListView.builder(
-                                physics: BouncingScrollPhysics(),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: tvseriesdetaildata['genres']!.length,
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                      margin: EdgeInsets.only(right: 10),
-                                      padding: EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.cyan.withValues(alpha: 0.2),
-                                              Colors.teal.withValues(alpha: 0.1),
-                                            ],
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: Colors.cyan.withValues(alpha: 0.3),
-                                            width: 1,
-                                          ),
-                                      ),
-                                      child: Text(
-                                          TvSeriesDetails[index + 1]['genre']
-                                              .toString()));
-                                }))
-                      ]),
-                      Container(
-                          padding: EdgeInsets.only(left: 10, top: 12),
-                          child: Text("Series Overview : ")),
-
-                      Container(
-                          padding: EdgeInsets.only(left: 10, top: 20),
-                          child: Text(
-                              TvSeriesDetails[0]['overview'].toString())),
+                      // TV Series Title
                       Padding(
-                        padding: const EdgeInsets.only(left: 20.0, top: 10),
-                        child: UserReview(reviewDetails: TvSeriesReview),
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+                        child: Text(
+                          TvSeriesDetails[0]['title'],
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                      Container(
-                          padding: EdgeInsets.only(left: 10, top: 20),
-                          child: Text(
-                              "Status : ${TvSeriesDetails[0]['status']}")),
-                      //created by
-                      // Container(
-                      //     padding: EdgeInsets.only(left: 10, top: 20),
-                      //     child: Text("Created By : ")),
-                      // Container(
-                      //     padding: EdgeInsets.only(left: 10, top: 10),
-                      //     height: 150,
-                      //     width: MediaQuery.of(context).size.width,
-                      //     child: ListView.builder(
-                      //         physics: BouncingScrollPhysics(),
-                      //         scrollDirection: Axis.horizontal,
-                      //         itemCount:
-                      //             tvseriesdetaildata['created_by']!.length,
-                      //         itemBuilder: (context, index) {
-                      //           //generes box
-                      //           return Container(
-                      //               margin: EdgeInsets.only(right: 10),
-                      //               padding: EdgeInsets.all(8),
-                      //               decoration: BoxDecoration(
-                      //                   color: Color.fromRGBO(25, 25, 25, 1),
-                      //                   borderRadius:
-                      //                       BorderRadius.circular(10)),
-                      //               child: Row(children: [
-                      //                 Column(children: [
-                      //                   CircleAvatar(
-                      //                       radius: 45,
-                      //                       backgroundImage: NetworkImage(
-                      //                           'https://image.tmdb.org/t/p/w500${TvSeriesDetails[index + 4]['creatorprofile']}')),
-                      //                   SizedBox(height: 10),
-                      //                   Text(TvSeriesDetails[index + 4]
-                      //                           ['creator']
-                      //                       .toString())
-                      //                 ])
-                      //               ]));
-                      //         })),
-                      Container(
-                          padding: EdgeInsets.only(left: 10, top: 20),
-                          child: Text(
-                              "Total Seasons : ${tvseriesdetaildata['seasons'].length}")),
-                      //airdate
-                      Container(
-                          padding: EdgeInsets.only(left: 10, top: 20),
-                          child: Text(
-                              "Release date : ${TvSeriesDetails[0]['releasedate']}")),
+
+                      // Rating Card
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.amber.withValues(alpha: 0.2),
+                                Colors.orange.withValues(alpha: 0.1),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, color: Colors.amber, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                TvSeriesDetails[0]['vote_average'].toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Text(
+                                ' / 10',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Genres
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: List.generate(
+                            tvseriesdetaildata['genres']!.length,
+                            (index) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.purple.withValues(alpha: 0.3),
+                                    Colors.deepPurple.withValues(alpha: 0.2),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.purple.withValues(alpha: 0.4),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                TvSeriesDetails[index + 1]['genre'].toString(),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Overview Section
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.cyan, Colors.teal],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Overview',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: Text(
+                          TvSeriesDetails[0]['overview'].toString(),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.6,
+                            color: Colors.white70,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+
+                      // Series Info Cards
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Column(
+                          children: [
+                            _buildInfoCard(
+                              icon: Icons.info_outline,
+                              iconColor: Colors.blue,
+                              title: 'Status',
+                              value: TvSeriesDetails[0]['status'],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoCard(
+                              icon: Icons.live_tv,
+                              iconColor: Colors.purple,
+                              title: 'Total Seasons',
+                              value: '${tvseriesdetaildata['seasons'].length} Seasons',
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoCard(
+                              icon: Icons.calendar_today,
+                              iconColor: Colors.green,
+                              title: 'First Air Date',
+                              value: TvSeriesDetails[0]['releasedate'],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // User Reviews
+                      if (TvSeriesReview.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Colors.cyan, Colors.teal],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'User Reviews',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (TvSeriesReview.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20.0, top: 10),
+                          child: UserReview(reviewDetails: TvSeriesReview),
+                        ),
                       sliderlist(similarserieslist, 'Similar Series', 'tv',
                           similarserieslist.length),
                       sliderlist(recommendserieslist, 'Recommended Series',

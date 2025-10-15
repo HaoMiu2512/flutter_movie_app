@@ -19,11 +19,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0F1922),
+        primaryColor: Colors.cyan,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.cyan,
+          secondary: Colors.tealAccent,
+          surface: Color(0xFF0A1929),
+        ),
         useMaterial3: true,
-      ), // // ThemeData
+      ),
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Flutter Movie App',
       home: LoginPage(),
-    ); // // MaterialApp
+    );
   }
 }

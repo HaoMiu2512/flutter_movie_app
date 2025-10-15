@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/auth_service.dart';
 import 'change_password_page.dart';
 
@@ -14,13 +18,15 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ImagePicker _picker = ImagePicker();
 
   final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _avatarUrlController = TextEditingController();
 
   bool _isLoading = false;
   bool _isEditingName = false;
-  bool _isEditingAvatar = false;
+  bool _isUploadingAvatar = false;
 
   User? get currentUser => _authService.currentUser;
   String? get userEmail => currentUser?.email;
@@ -106,10 +112,6 @@ class _ProfilePageState extends State<ProfilePage> {
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
       }, SetOptions(merge: true));
 
-      setState(() {
-        _isEditingAvatar = false;
-      });
-
       _showSnackBar('Avatar updated successfully!', Colors.green);
     } catch (e) {
       _showSnackBar('Error updating avatar: $e', Colors.red);
@@ -118,7 +120,182 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showAvatarDialog() {
+  Future<void> _pickAndUploadAvatar() async {
+    try {
+      // Pick image
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploadingAvatar = true);
+
+      String downloadURL;
+
+      if (kIsWeb) {
+        // For Web
+        final bytes = await image.readAsBytes();
+        final ref = _storage.ref().child('avatars/${currentUser!.uid}.jpg');
+        await ref.putData(bytes);
+        downloadURL = await ref.getDownloadURL();
+      } else {
+        // For Mobile
+        final File file = File(image.path);
+        final ref = _storage.ref().child('avatars/${currentUser!.uid}.jpg');
+        await ref.putFile(file);
+        downloadURL = await ref.getDownloadURL();
+      }
+
+      // Update Firebase Auth profile
+      await currentUser?.updatePhotoURL(downloadURL);
+      await currentUser?.reload();
+
+      // Update Firestore
+      await _firestore.collection('users').doc(currentUser!.uid).set({
+        'photoURL': downloadURL,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      }, SetOptions(merge: true));
+
+      setState(() {});
+
+      _showSnackBar('Avatar uploaded successfully!', Colors.green);
+    } catch (e) {
+      _showSnackBar('Error uploading avatar: $e', Colors.red);
+    } finally {
+      setState(() => _isUploadingAvatar = false);
+    }
+  }
+
+  void _showAvatarOptionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0A1929),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.cyan.withValues(alpha: 0.3)),
+        ),
+        title: const Text(
+          'Update Avatar',
+          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose how you want to update your avatar:',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+
+            // Option 1: Upload File
+            _buildAvatarOptionCard(
+              icon: Icons.upload_file,
+              title: 'Upload File',
+              subtitle: 'Select an image from your device',
+              color: Colors.blue,
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUploadAvatar();
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            // Option 2: Enter URL
+            _buildAvatarOptionCard(
+              icon: Icons.link,
+              title: 'Enter URL',
+              subtitle: 'Paste an image URL from the internet',
+              color: Colors.purple,
+              onTap: () {
+                Navigator.pop(context);
+                _showAvatarUrlDialog();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatarOptionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: color,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAvatarUrlDialog() {
     _avatarUrlController.text = photoURL ?? '';
 
     showDialog(
@@ -130,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
           side: BorderSide(color: Colors.cyan.withValues(alpha: 0.3)),
         ),
         title: const Text(
-          'Update Avatar',
+          'Enter Image URL',
           style: TextStyle(color: Colors.white),
         ),
         content: Column(
@@ -138,7 +315,7 @@ class _ProfilePageState extends State<ProfilePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Enter image URL:',
+              'Paste the image URL below:',
               style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 12),
@@ -303,7 +480,7 @@ class _ProfilePageState extends State<ProfilePage> {
               bottom: 0,
               right: 0,
               child: GestureDetector(
-                onTap: _isLoading ? null : _showAvatarDialog,
+                onTap: _isLoading ? null : _showAvatarOptionsDialog,
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -508,6 +685,32 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildActionButtonsCard() {
+    // Check if user has email/password provider
+    final hasPasswordProvider = currentUser?.providerData
+        .any((info) => info.providerId == 'password') ?? false;
+
+    // Get the login method for display
+    String loginMethod = 'Unknown';
+    if (currentUser?.providerData.isNotEmpty ?? false) {
+      final providerId = currentUser!.providerData.first.providerId;
+      switch (providerId) {
+        case 'password':
+          loginMethod = 'Email/Password';
+          break;
+        case 'google.com':
+          loginMethod = 'Google';
+          break;
+        case 'facebook.com':
+          loginMethod = 'Facebook';
+          break;
+        case 'phone':
+          loginMethod = 'Phone Number';
+          break;
+        default:
+          loginMethod = providerId;
+      }
+    }
+
     return Card(
       color: const Color(0xFF0A1929),
       shape: RoundedRectangleBorder(
@@ -532,21 +735,126 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 16),
 
-            // Change Password Button
-            _buildActionButton(
-              icon: Icons.lock_outline,
-              title: 'Change Password',
-              subtitle: 'Update your password',
-              color: Colors.orange,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ChangePasswordPage(),
+            // Login Method Info
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.blue.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.info_outline, color: Colors.blue, size: 24),
                   ),
-                );
-              },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Login Method',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          loginMethod,
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Change Password Button (only for email/password users)
+            if (hasPasswordProvider)
+              _buildActionButton(
+                icon: Icons.lock_outline,
+                title: 'Change Password',
+                subtitle: 'Update your password',
+                color: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordPage(),
+                    ),
+                  );
+                },
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.lock_outline, color: Colors.grey, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Change Password',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Not available for $loginMethod login',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.block,
+                      color: Colors.grey[600],
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
