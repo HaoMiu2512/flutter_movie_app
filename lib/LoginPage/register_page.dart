@@ -235,14 +235,30 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 8),
 
-                    // App Logo/Title
-                    Icon(
-                      Icons.person_add_rounded,
-                      size: 70,
-                      color: Colors.cyan[400],
+                    // Flick Logo
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.cyan.withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.asset(
+                          'assets/images/Flick_NoInfo.jpg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
+                    const Text(
                       'Create Account',
                       style: TextStyle(
                         fontSize: 28,

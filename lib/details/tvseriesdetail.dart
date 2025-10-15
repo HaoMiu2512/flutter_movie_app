@@ -30,6 +30,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   // Favorites
   final FavoritesService _favoritesService = FavoritesService();
   bool _isFavorite = false;
+  bool _isLoading = true;
 
   Future<void> tvseriesdetailfunc() async {
     var tvseriesdetailurl =
@@ -252,7 +253,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   @override
   void initState() {
     super.initState();
-    _checkFavoriteStatus();
+    _loadData();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
         overlays: [SystemUiOverlay.bottom]);
     SystemChrome.setPreferredOrientations([
@@ -261,15 +262,23 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
     ]);
   }
 
+  Future<void> _loadData() async {
+    await tvseriesdetailfunc();
+    await _checkFavoriteStatus();
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF001E3C),
-      body: FutureBuilder(
-          future: tvseriesdetailfunc(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              return CustomScrollView(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.amber),
+            )
+          : CustomScrollView(
                   physics: BouncingScrollPhysics(),
                   slivers: [
                     SliverAppBar(
@@ -536,13 +545,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                           //     child: Center(child: normaltext("By Niranjan Dahal"))
                           )
                     ]))
-                  ]);
-            } else {
-              return Center(
-                  child:
-                      CircularProgressIndicator(color: Colors.amber.shade400));
-            }
-          }),
+                  ]),
     );
   }
 }

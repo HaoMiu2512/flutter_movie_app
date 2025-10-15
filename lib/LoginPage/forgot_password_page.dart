@@ -103,16 +103,32 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Icon
-                    Icon(
-                      Icons.lock_reset_rounded,
-                      size: 80,
-                      color: Colors.cyan[400],
+                    // Flick Logo
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.cyan.withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.asset(
+                          'assets/images/Flick_NoInfo.jpg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
 
                     // Title
-                    Text(
+                    const Text(
                       'Forgot Password?',
                       style: TextStyle(
                         fontSize: 32,

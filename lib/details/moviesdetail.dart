@@ -30,11 +30,20 @@ class _MoviesDetailState extends State<MoviesDetail> {
   // Favorites
   final FavoritesService _favoritesService = FavoritesService();
   bool _isFavorite = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkFavoriteStatus();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Moviedetails();
+    await _checkFavoriteStatus();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _checkFavoriteStatus() async {
@@ -260,11 +269,11 @@ class _MoviesDetailState extends State<MoviesDetail> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF001E3C),
-      body: FutureBuilder(
-        future: Moviedetails(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return CustomScrollView(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.amber),
+            )
+          : CustomScrollView(
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverAppBar(
@@ -565,14 +574,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
                   ]),
                 ),
               ],
-            );
-          } else {
-            return Center(
-              child: CircularProgressIndicator(color: Colors.amber),
-            );
-          }
-        },
-      ),
+            ),
     );
   }
 }
