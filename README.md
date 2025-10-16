@@ -935,7 +935,7 @@ Special thanks to all the package maintainers:
 <div align="center">
   <h3>⭐ If you like this project, please give it a star! ⭐</h3>
 
-  <p>Made with ❤️ using Flutter & Firebase</p>
+  <p>Made with Haotonn using Flutter & Firebase</p>
 
   <p>© 2024 Flick - All Rights Reserved</p>
 
