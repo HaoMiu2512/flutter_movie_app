@@ -14,6 +14,7 @@ import 'package:flutter_movie_app/LoginPage/login_page.dart';
 import 'package:flutter_movie_app/pages/favorites_page.dart';
 import 'package:flutter_movie_app/pages/profile_page.dart';
 import 'package:flutter_movie_app/pages/settings_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   final String? username;
@@ -75,6 +76,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     ]);
   }
 
+  Future<User?> _refreshUser() async {
+    // Force reload current user to get latest data
+    await FirebaseAuth.instance.currentUser?.reload();
+    return FirebaseAuth.instance.currentUser;
+  }
+
   Widget _buildDrawer(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Drawer(
@@ -129,15 +136,25 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Username
-                  Text(
-                    widget.username ?? 'User',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
+                  // Username - Refresh on every drawer open
+                  FutureBuilder<User?>(
+                    future: _refreshUser(),
+                    builder: (context, snapshot) {
+                      final user = snapshot.data;
+                      final displayName = user?.displayName ??
+                                         user?.email?.split('@')[0] ??
+                                         widget.username ??
+                                         'User';
+                      return Text(
+                        displayName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

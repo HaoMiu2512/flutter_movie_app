@@ -8,8 +8,10 @@ import 'package:flutter_movie_app/HomePage/HomePage.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/apikey/apikey.dart';
 import 'package:flutter_movie_app/services/favorites_service.dart';
+import 'package:flutter_movie_app/services/recently_viewed_service.dart';
 import 'package:flutter_movie_app/models/movie.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 class TvSeriesDetail extends StatefulWidget {
   var id;
@@ -29,6 +31,7 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
 
   // Favorites
   final FavoritesService _favoritesService = FavoritesService();
+  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
   bool _isFavorite = false;
   bool _isLoading = true;
 
@@ -189,6 +192,183 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
     }
   }
 
+  Future<void> _shareTvSeries() async {
+    if (TvSeriesDetails.isEmpty) return;
+
+    final seriesId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final title = TvSeriesDetails[0]['title'];
+    final rating = TvSeriesDetails[0]['vote_average'];
+    final overview = TvSeriesDetails[0]['overview'];
+
+    // TMDB TV series link
+    final seriesLink = 'https://www.themoviedb.org/tv/$seriesId';
+
+    // Share text
+    final shareText = '''
+📺 $title
+
+⭐ Rating: $rating/10
+
+📝 $overview
+
+🔗 View more: $seriesLink
+
+Shared from Flick Movie App
+''';
+
+    // Show bottom sheet with share options
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1929),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.share, color: Colors.cyan[300], size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Share TV Series',
+                    style: TextStyle(
+                      color: Colors.cyan[300],
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Copy Link option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.link, color: Colors.blue, size: 24),
+              ),
+              title: const Text(
+                'Copy Link',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                seriesLink,
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _copyTvSeriesLink();
+              },
+            ),
+            Divider(color: Colors.grey[800], height: 1),
+            // Share via apps option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.share, color: Colors.green, size: 24),
+              ),
+              title: const Text(
+                'Share via...',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                'WhatsApp, Messenger, Email, etc.',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await Share.share(
+                    shareText,
+                    subject: 'Check out this TV series: $title',
+                  );
+                } catch (e) {
+                  print('Error sharing: $e');
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _copyTvSeriesLink() async {
+    if (TvSeriesDetails.isEmpty) return;
+
+    final seriesId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final seriesLink = 'https://www.themoviedb.org/tv/$seriesId';
+
+    try {
+      await Clipboard.setData(ClipboardData(text: seriesLink));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Link copied!',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        seriesLink,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error copying link: $e');
+    }
+  }
+
   Widget _buildInfoCard({
     required IconData icon,
     required Color iconColor,
@@ -265,9 +445,35 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   Future<void> _loadData() async {
     await tvseriesdetailfunc();
     await _checkFavoriteStatus();
+    await _addToRecentlyViewed();
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _addToRecentlyViewed() async {
+    if (TvSeriesDetails.isEmpty) {
+      print('TvSeriesDetail: Cannot add to recently viewed - TvSeriesDetails is empty');
+      return;
+    }
+
+    try {
+      final movie = Movie(
+        id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+        title: TvSeriesDetails[0]['title'],
+        posterPath: tvseriesdetaildata['poster_path'] ?? TvSeriesDetails[0]['backdrop_path'] ?? '',
+        overview: TvSeriesDetails[0]['overview'],
+        voteAverage: (TvSeriesDetails[0]['vote_average'] as num).toDouble(),
+        releaseDate: TvSeriesDetails[0]['releasedate'],
+        mediaType: 'tv',
+      );
+
+      print('TvSeriesDetail: Adding to recently viewed - ${movie.title}');
+      final success = await _recentlyViewedService.addToRecentlyViewed(movie);
+      print('TvSeriesDetail: Add to recently viewed result: $success');
+    } catch (e) {
+      print('TvSeriesDetail: Error adding to recently viewed: $e');
+    }
   }
 
   @override
@@ -302,12 +508,27 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                                 color: Colors.white),
                         actions: [
                           IconButton(
+                            onPressed: _copyTvSeriesLink,
+                            icon: const Icon(Icons.link),
+                            iconSize: 26,
+                            color: Colors.white,
+                            tooltip: 'Copy link',
+                          ),
+                          IconButton(
+                            onPressed: _shareTvSeries,
+                            icon: const Icon(Icons.share),
+                            iconSize: 26,
+                            color: Colors.white,
+                            tooltip: 'Share TV series',
+                          ),
+                          IconButton(
                             onPressed: _toggleFavorite,
                             icon: Icon(
                               _isFavorite ? Icons.favorite : Icons.favorite_border,
                             ),
                             iconSize: 28,
                             color: _isFavorite ? Colors.red : Colors.white,
+                            tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
                           ),
                           IconButton(
                               onPressed: () {
@@ -320,7 +541,8 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
                               },
                               icon: Icon(FontAwesomeIcons.houseUser),
                               iconSize: 25,
-                              color: Colors.white)
+                              color: Colors.white,
+                              tooltip: 'Home')
                         ],
                         backgroundColor: const Color(0xFF0A1929).withValues(alpha: 0.95),
                         expandedHeight:

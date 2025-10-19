@@ -220,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child: Image.asset(
-                          'assets/images/Flick_NoInfo.jpg',
+                          'assets/images/Flick.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),

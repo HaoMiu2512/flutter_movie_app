@@ -120,7 +120,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
                         child: Image.asset(
-                          'assets/images/Flick_NoInfo.jpg',
+                          'assets/images/Flick.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),

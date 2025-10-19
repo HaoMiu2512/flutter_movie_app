@@ -72,6 +72,26 @@ Flick is a modern mobile application that allows users to discover, browse, and 
 - ✅ **Cross-Device Sync** - Access favorites from any device
 - ✅ **No Page Reload** - Instant UI update without refreshing
 
+### 🕒 **Recently Viewed**
+- ✅ **Auto-Tracking** - Automatically saves movies/TV shows when viewed
+- ✅ **Profile Integration** - Recently viewed section in profile page
+- ✅ **Cloud Storage** - Synced via Firebase Firestore
+- ✅ **Media Type Badges** - Visual distinction between MOVIE and TV
+- ✅ **See All Page** - Full grid view of recently viewed content
+- ✅ **Clear All** - Option to clear viewing history
+- ✅ **Limit Management** - Auto-cleanup keeps only 20 most recent items
+- ✅ **Mixed Content** - Supports both Movies and TV Series
+- ✅ **Real-time Updates** - StreamBuilder for live data synchronization
+
+### 📤 **Share Functionality**
+- ✅ **Share Button** - Share icon in movie/TV series detail pages
+- ✅ **Bottom Sheet UI** - Modern modal bottom sheet interface
+- ✅ **Copy Link** - Copy TMDB URL to clipboard with success notification
+- ✅ **Share via Apps** - Native share dialog for WhatsApp, Messenger, Email, etc.
+- ✅ **TMDB Links** - Direct links to content on The Movie Database
+- ✅ **Both Media Types** - Works for both Movies and TV Series
+- ✅ **Styled Interface** - Custom themed bottom sheet matching app design
+
 ### 👤 **Profile Management**
 - ✅ **User Profile Page** - Display user information
 - ✅ **Avatar Upload Options**:
@@ -175,7 +195,6 @@ Flick is a modern mobile application that allows users to discover, browse, and 
 - ⏳ **Favorite Updates** - Alert when favorite content gets new episodes
 
 ### 🎬 **Enhanced Content Features**
-- ⏳ **Watch History** - Track viewed movies/shows
 - ⏳ **Continue Watching** - Resume from where you left off
 - ⏳ **Personalized Recommendations** - AI-based suggestions
 - ⏳ **Rating System** - Allow users to rate content
@@ -188,7 +207,6 @@ Flick is a modern mobile application that allows users to discover, browse, and 
 - ⏳ **Voice Search** - Search using voice input
 
 ### 📱 **Social Features**
-- ⏳ **Share Content** - Share movies/shows to social media
 - ⏳ **Friend System** - Connect with other users
 - ⏳ **Activity Feed** - See what friends are watching
 - ⏳ **Comments** - Discuss movies with other users
@@ -202,7 +220,6 @@ Flick is a modern mobile application that allows users to discover, browse, and 
 - ⏳ **Multi-Profile Support** - Multiple user profiles per account
 - ⏳ **Parental Controls** - Content restrictions
 - ⏳ **Watchlist Organization** - Custom lists and categories
-- ⏳ **Recently Viewed** - Quick access to recent content
 
 ### 📺 **Video Features**
 - ⏳ **Chromecast Support** - Cast to TV
@@ -432,6 +449,11 @@ service cloud.firestore {
       match /favorites/{movieId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Recently viewed subcollection
+      match /recently_viewed/{movieId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }
@@ -570,6 +592,7 @@ dependencies:
   image_picker: ^1.1.2           # Pick images
   package_info_plus: ^8.1.2      # App info
   fluttertoast: ^9.0.0          # Toast messages
+  share_plus: ^10.1.3            # Share content
 
 dev_dependencies:
   flutter_test:
@@ -629,7 +652,8 @@ flutter_movie_app/
 │   │   ├── profile_page.dart          # User profile
 │   │   ├── settings_page.dart         # App settings
 │   │   ├── change_password_page.dart  # Password change
-│   │   └── view_all_page.dart         # Grid view page
+│   │   ├── view_all_page.dart         # Grid view page
+│   │   └── recently_viewed_all_page.dart # Recently viewed grid
 │   │
 │   ├── reapeatedfunction/     # Reusable widgets
 │   │   ├── slider.dart                # Horizontal slider
@@ -639,7 +663,8 @@ flutter_movie_app/
 │   │
 │   ├── services/              # Business logic
 │   │   ├── auth_service.dart          # Auth operations
-│   │   └── favorites_service.dart     # Favorites CRUD
+│   │   ├── favorites_service.dart     # Favorites CRUD
+│   │   └── recently_viewed_service.dart # Recently viewed tracking
 │   │
 │   ├── firebase_options.dart  # Firebase config (auto-generated)
 │   ├── main.dart              # App entry point
@@ -724,6 +749,10 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
 
       match /favorites/{movieId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /recently_viewed/{movieId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }

@@ -6,7 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/auth_service.dart';
+import '../services/recently_viewed_service.dart';
+import '../models/movie.dart';
+import '../details/moviesdetail.dart';
+import '../details/tvseriesdetail.dart';
 import 'change_password_page.dart';
+import 'recently_viewed_all_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +22,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
+  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
@@ -62,8 +68,14 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
+      // Update display name
       await currentUser?.updateDisplayName(_displayNameController.text.trim());
+
+      // Reload to get fresh data
       await currentUser?.reload();
+
+      // Force refresh the auth state
+      await FirebaseAuth.instance.currentUser?.reload();
 
       // Update in Firestore
       if (currentUser != null) {
@@ -74,9 +86,13 @@ class _ProfilePageState extends State<ProfilePage> {
         }, SetOptions(merge: true));
       }
 
-      setState(() {
-        _isEditingName = false;
-      });
+      // Refresh UI
+      if (mounted) {
+        setState(() {
+          _isEditingName = false;
+        });
+      }
+
       _showSnackBar('Name updated successfully!', Colors.green);
     } catch (e) {
       _showSnackBar('Error updating name: $e', Colors.red);
@@ -423,7 +439,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     _buildUserInfoCard(),
                     const SizedBox(height: 20),
 
-                    // Action Buttons Card
+                    // Recently Viewed Section
+                    _buildRecentlyViewedSection(),
+                    const SizedBox(height: 20),
+
+                    // Action Buttons Card (Security)
                     _buildActionButtonsCard(),
                     const SizedBox(height: 20),
 
@@ -434,6 +454,357 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
       ),
     );
+  }
+
+  Widget _buildRecentlyViewedSection() {
+    return Card(
+      color: const Color(0xFF0A1929),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.cyan.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.history,
+                      color: Colors.cyan[300],
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Recently Viewed',
+                      style: TextStyle(
+                        color: Colors.cyan[300],
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    // See All button
+                    TextButton(
+                      onPressed: _showAllRecentlyViewed,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.cyan[300],
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'See All',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.cyan[300],
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 12,
+                            color: Colors.cyan[300],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Clear button
+                    IconButton(
+                      onPressed: _confirmClearRecentlyViewed,
+                      icon: const Icon(Icons.delete_outline),
+                      color: Colors.red[300],
+                      iconSize: 20,
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(),
+                      tooltip: 'Clear all',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            StreamBuilder<List<Movie>>(
+              stream: _recentlyViewedService.getRecentlyViewedStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: Colors.cyan),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'Error loading recently viewed',
+                        style: TextStyle(color: Colors.grey[400]),
+                      ),
+                    ),
+                  );
+                }
+
+                final movies = snapshot.data ?? [];
+
+                if (movies.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.movie_outlined,
+                          size: 50,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No recently viewed movies',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Movies you view will appear here',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return SizedBox(
+                  height: 245,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: movies.length > 10 ? 10 : movies.length,
+                    itemBuilder: (context, index) {
+                      final movie = movies[index];
+                      return _buildRecentlyViewedItem(movie);
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentlyViewedItem(Movie movie) {
+    // Ensure posterPath starts with /
+    final posterUrl = movie.posterPath.isNotEmpty
+        ? 'https://image.tmdb.org/t/p/w500${movie.posterPath.startsWith('/') ? movie.posterPath : '/${movie.posterPath}'}'
+        : '';
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => movie.mediaType == 'tv'
+                ? TvSeriesDetail(id: movie.id)
+                : MoviesDetail(id: movie.id),
+          ),
+        );
+      },
+      child: Container(
+        width: 120,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Movie Poster
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 170,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: posterUrl.isNotEmpty
+                        ? Image.network(
+                            posterUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[800],
+                                child: const Icon(
+                                  Icons.movie,
+                                  color: Colors.grey,
+                                  size: 50,
+                                ),
+                              );
+                            },
+                          )
+                        : const Icon(
+                            Icons.movie,
+                            color: Colors.grey,
+                            size: 50,
+                          ),
+                  ),
+                ),
+                // Media type badge
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: movie.mediaType == 'tv'
+                          ? Colors.purple[700]
+                          : Colors.blue[700],
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      movie.mediaType == 'tv' ? 'TV' : 'MOVIE',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Movie Title
+            Text(
+              movie.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Rating
+            Row(
+              children: [
+                const Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  movie.voteAverage.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Show all recently viewed movies
+  void _showAllRecentlyViewed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const RecentlyViewedAllPage(),
+      ),
+    );
+  }
+
+  // Confirm before clearing all recently viewed
+  Future<void> _confirmClearRecentlyViewed() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0A1929),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red[300], size: 28),
+            const SizedBox(width: 12),
+            const Text(
+              'Clear History?',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to clear all recently viewed movies? This action cannot be undone.',
+          style: TextStyle(color: Colors.grey, fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[700],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      final success = await _recentlyViewedService.clearAllRecentlyViewed();
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        _showSnackBar(
+          success
+              ? 'Recently viewed cleared successfully'
+              : 'Failed to clear recently viewed',
+          success ? Colors.green[700]! : Colors.red[700]!,
+        );
+      }
+    }
   }
 
   Widget _buildAvatarSection() {

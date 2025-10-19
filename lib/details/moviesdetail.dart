@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_movie_app/apikey/apikey.dart';
@@ -8,7 +9,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/reapeatedfunction/userreview.dart';
 import 'package:flutter_movie_app/services/favorites_service.dart';
+import 'package:flutter_movie_app/services/recently_viewed_service.dart';
 import 'package:flutter_movie_app/models/movie.dart';
+import 'package:share_plus/share_plus.dart';
 
 class MoviesDetail extends StatefulWidget {
   var id;
@@ -29,6 +32,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
 
   // Favorites
   final FavoritesService _favoritesService = FavoritesService();
+  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
   bool _isFavorite = false;
   bool _isLoading = true;
 
@@ -41,9 +45,36 @@ class _MoviesDetailState extends State<MoviesDetail> {
   Future<void> _loadData() async {
     await Moviedetails();
     await _checkFavoriteStatus();
+    await _addToRecentlyViewed();
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _addToRecentlyViewed() async {
+    if (MovieDetails.isEmpty) {
+      print('MoviesDetail: Cannot add to recently viewed - MovieDetails is empty');
+      return;
+    }
+
+    try {
+      final movie = Movie(
+        id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+        title: MovieDetails[0]['title'],
+        posterPath: MovieDetails[0]['poster_path'] ?? MovieDetails[0]['backdrop_path'] ?? '',
+        overview: MovieDetails[0]['overview'],
+        voteAverage: (MovieDetails[0]['vote_average'] as num).toDouble(),
+        releaseDate: MovieDetails[0]['release_date'],
+        mediaType: 'movie',
+      );
+
+      print('MoviesDetail: Adding to recently viewed - ${movie.title}');
+      print('MoviesDetail: posterPath = ${movie.posterPath}');
+      final success = await _recentlyViewedService.addToRecentlyViewed(movie);
+      print('MoviesDetail: Add to recently viewed result: $success');
+    } catch (e) {
+      print('MoviesDetail: Error adding to recently viewed: $e');
+    }
   }
 
   Future<void> _checkFavoriteStatus() async {
@@ -87,6 +118,183 @@ class _MoviesDetailState extends State<MoviesDetail> {
     }
   }
 
+  Future<void> _shareMovie() async {
+    if (MovieDetails.isEmpty) return;
+
+    final movieId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final title = MovieDetails[0]['title'];
+    final rating = MovieDetails[0]['vote_average'];
+    final overview = MovieDetails[0]['overview'];
+
+    // TMDB movie link
+    final movieLink = 'https://www.themoviedb.org/movie/$movieId';
+
+    // Share text
+    final shareText = '''
+🎬 $title
+
+⭐ Rating: $rating/10
+
+📝 $overview
+
+🔗 View more: $movieLink
+
+Shared from Flick Movie App
+''';
+
+    // Show bottom sheet with share options
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1929),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(Icons.share, color: Colors.cyan[300], size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Share Movie',
+                    style: TextStyle(
+                      color: Colors.cyan[300],
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Copy Link option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.link, color: Colors.blue, size: 24),
+              ),
+              title: const Text(
+                'Copy Link',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                movieLink,
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await _copyMovieLink();
+              },
+            ),
+            Divider(color: Colors.grey[800], height: 1),
+            // Share via apps option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.share, color: Colors.green, size: 24),
+              ),
+              title: const Text(
+                'Share via...',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                'WhatsApp, Messenger, Email, etc.',
+                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await Share.share(
+                    shareText,
+                    subject: 'Check out this movie: $title',
+                  );
+                } catch (e) {
+                  print('Error sharing: $e');
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _copyMovieLink() async {
+    if (MovieDetails.isEmpty) return;
+
+    final movieId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final movieLink = 'https://www.themoviedb.org/movie/$movieId';
+
+    try {
+      await Clipboard.setData(ClipboardData(text: movieLink));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Link copied!',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        movieLink,
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[700],
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error copying link: $e');
+    }
+  }
+
   Future Moviedetails() async {
     var moviedetailurl =
         'https://api.themoviedb.org/3/movie/${widget.id}?api_key=$apikey';
@@ -105,6 +313,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
       for (var i = 0; i < 1; i++) {
         MovieDetails.add({
           "backdrop_path": moviedetailjson['backdrop_path'],
+          "poster_path": moviedetailjson['poster_path'],
           "title": moviedetailjson['title'],
           "vote_average": moviedetailjson['vote_average'],
           "overview": moviedetailjson['overview'],
@@ -288,12 +497,20 @@ class _MoviesDetailState extends State<MoviesDetail> {
                   ),
                   actions: [
                     IconButton(
+                      onPressed: _shareMovie,
+                      icon: const Icon(Icons.share),
+                      iconSize: 26,
+                      color: Colors.white,
+                      tooltip: 'Share movie',
+                    ),
+                    IconButton(
                       onPressed: _toggleFavorite,
                       icon: Icon(
                         _isFavorite ? Icons.favorite : Icons.favorite_border,
                       ),
                       iconSize: 28,
                       color: _isFavorite ? Colors.red : Colors.white,
+                      tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
                     ),
                     IconButton(
                       onPressed: () {
@@ -306,6 +523,7 @@ class _MoviesDetailState extends State<MoviesDetail> {
                       icon: Icon(FontAwesomeIcons.houseUser),
                       iconSize: 25,
                       color: Colors.white,
+                      tooltip: 'Home',
                     ),
                   ],
                   backgroundColor: const Color(0xFF0A1929).withValues(alpha: 0.95),
