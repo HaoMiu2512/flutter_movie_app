@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_movie_app/apikey/apikey.dart';
 import 'package:flutter_movie_app/reapeatedfunction/slider.dart';
-import 'package:flutter_movie_app/HomePage/homepage.dart';
+import 'package:flutter_movie_app/main_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/reapeatedfunction/userreview.dart';
@@ -516,7 +516,7 @@ Shared from Flick Movie App
                       onPressed: () {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => HomePage()),
+                          MaterialPageRoute(builder: (context) => const MainScreen()),
                           (route) => false,
                         );
                       },

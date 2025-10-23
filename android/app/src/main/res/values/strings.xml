@@ -3,9 +3,9 @@
     <string name="app_name">Flutter Movie App</string>
 
     <!-- Facebook Configuration -->
-    <!-- You need to create a Facebook App at https://developers.facebook.com/ -->
-    <!-- Replace YOUR_APP_ID and YOUR_CLIENT_TOKEN with your actual values -->
-    <string name="facebook_app_id">YOUR_APP_ID</string>
-    <string name="facebook_client_token">YOUR_CLIENT_TOKEN</string>
-    <string name="fb_login_protocol_scheme">fbYOUR_APP_ID</string>
+    <!-- Facebook App ID: 1151774536907281 -->
+    <!-- Client Token: 095a24ad6a2cf44e81b521a0388ee115 -->
+    <string name="facebook_app_id">1151774536907281</string>
+    <string name="facebook_client_token">095a24ad6a2cf44e81b521a0388ee115</string>
+    <string name="fb_login_protocol_scheme">fb1151774536907281</string>
 </resources>

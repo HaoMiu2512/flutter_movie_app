@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../HomePage/HomePage.dart';
+import '../main_screen.dart';
 import '../services/auth_service.dart';
 import 'phone_auth_page.dart';
 
@@ -58,7 +58,7 @@ class _RegisterPageState extends State<RegisterPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(username: username),
+              builder: (context) => MainScreen(username: username),
             ),
           );
         }
@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: username),
+            builder: (context) => MainScreen(username: username),
           ),
         );
       }
@@ -174,7 +174,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: username),
+            builder: (context) => MainScreen(username: username),
           ),
         );
       }

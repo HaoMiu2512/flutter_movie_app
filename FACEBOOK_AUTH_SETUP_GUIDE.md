@@ -314,16 +314,165 @@ flutter run
 
 ## 📱 Platform Support
 
-- ✅ Android (Đã cấu hình)
-- ⚠️ iOS (Cần cấu hình thêm Info.plist và URL Schemes)
+- ✅ Android (Đã cấu hình hoàn tất)
+- ✅ iOS (Đã cấu hình hoàn tất)
 - ⚠️ Web (Cần cấu hình thêm SDK và App ID)
+
+---
+
+## 🎯 CẤU HÌNH ĐÃ HOÀN THÀNH CHO BẠN
+
+### ✅ App ID của bạn: **1151774536907281**
+
+### Files đã được cập nhật:
+
+#### 1. ✅ android/app/src/main/res/values/strings.xml
+```xml
+<string name="facebook_app_id">1151774536907281</string>
+<string name="facebook_client_token">YOUR_CLIENT_TOKEN</string>
+<string name="fb_login_protocol_scheme">fb1151774536907281</string>
+```
+
+#### 2. ✅ ios/Runner/Info.plist
+```xml
+<key>FacebookAppID</key>
+<string>1151774536907281</string>
+<key>FacebookDisplayName</key>
+<string>Flutter Movie App</string>
+<key>CFBundleURLSchemes</key>
+<array>
+    <string>fb1151774536907281</string>
+</array>
+```
+
+---
+
+## 🔥 CÁC BƯỚC TIẾP THEO CẦN LÀM
+
+### Bước 1️⃣: Lấy Client Token từ Facebook
+
+1. Truy cập: https://developers.facebook.com/apps/1151774536907281/settings/basic/
+2. Tìm mục **"App Secret"** hoặc **"Client Token"**
+3. Click **"Show"** để xem Client Token
+4. Copy giá trị Client Token
+
+### Bước 2️⃣: Cập nhật Client Token
+
+Mở file: `android/app/src/main/res/values/strings.xml`
+
+Thay dòng:
+```xml
+<string name="facebook_client_token">YOUR_CLIENT_TOKEN</string>
+```
+
+Thành (ví dụ):
+```xml
+<string name="facebook_client_token">abc123def456ghi789jkl012</string>
+```
+
+### Bước 3️⃣: Cấu hình Android Platform trên Facebook
+
+1. Vào: https://developers.facebook.com/apps/1151774536907281/settings/basic/
+2. Scroll xuống **"Add Platform"** → Chọn **"Android"**
+3. Điền thông tin:
+
+   **Package Name:**
+   ```
+   com.example.flutter_movie_app
+   ```
+
+   **Default Activity Class Name:**
+   ```
+   com.example.flutter_movie_app.MainActivity
+   ```
+
+   **Key Hashes:** (Chạy lệnh dưới để lấy)
+
+   **Trên Windows PowerShell:**
+   ```powershell
+   cd $env:USERPROFILE\.android
+   keytool -exportcert -alias androiddebugkey -keystore debug.keystore | openssl sha1 -binary | openssl base64
+   ```
+   Password khi hỏi: `android`
+
+   **Trên Mac/Linux:**
+   ```bash
+   keytool -exportcert -alias androiddebugkey -keystore ~/.android/debug.keystore | openssl sha1 -binary | openssl base64
+   ```
+   Password: `android`
+
+4. Copy Key Hash và paste vào Facebook Console
+5. Click **"Save Changes"**
+
+### Bước 4️⃣: Cấu hình iOS Platform trên Facebook
+
+1. Vào: https://developers.facebook.com/apps/1151774536907281/settings/basic/
+2. Click **"Add Platform"** → Chọn **"iOS"**
+3. Điền thông tin:
+
+   **Bundle ID:** (Tìm trong file `ios/Runner.xcodeproj/project.pbxproj`)
+   ```
+   com.example.flutterMovieApp
+   ```
+   (hoặc tìm chính xác trong Xcode)
+
+4. Click **"Save Changes"**
+
+### Bước 5️⃣: Enable Facebook Login trong Firebase
+
+1. Vào: https://console.firebase.google.com/
+2. Chọn project của bạn
+3. **Authentication** → **Sign-in method** → **Facebook**
+4. Click **"Enable"**
+5. Nhập:
+   - **App ID:** `1151774536907281`
+   - **App Secret:** (Lấy từ Facebook Developers Console → Settings → Basic → Show)
+6. Copy **OAuth redirect URI** từ Firebase
+7. Click **"Save"**
+
+### Bước 6️⃣: Cấu hình OAuth Redirect URI
+
+1. Vào: https://developers.facebook.com/apps/1151774536907281/fb-login/settings/
+2. Tìm **"Valid OAuth Redirect URIs"**
+3. Paste OAuth redirect URI từ Firebase (Bước 5)
+4. Click **"Save Changes"**
+
+### Bước 7️⃣: Test App (Development Mode)
+
+1. Add tài khoản test:
+   - Vào: https://developers.facebook.com/apps/1151774536907281/roles/test-users/
+   - Hoặc add email của bạn vào **Roles** → **Administrators**
+
+2. Rebuild app:
+   ```bash
+   flutter clean
+   flutter pub get
+   flutter run
+   ```
+
+3. Test login với Facebook
+
+### Bước 8️⃣: Publish App (Cho người dùng thật)
+
+Khi sẵn sàng cho production:
+
+1. Vào: https://developers.facebook.com/apps/1151774536907281/settings/basic/
+2. Điền:
+   - Privacy Policy URL (bắt buộc)
+   - Terms of Service URL
+   - App Icon
+   - Category
+3. Switch **App Mode** từ "Development" → "Live"
+
+---
 
 ## 🎉 Hoàn Thành!
 
-Facebook Authentication đã sẵn sàng!
+Sau khi hoàn thành các bước trên, Facebook Login sẽ hoạt động!
 
-**Next Steps:**
-1. Tạo Facebook App và lấy credentials
-2. Update strings.xml
-3. Rebuild app
-4. Test và enjoy! 🎊
+**Package Name của bạn:** `com.example.flutter_movie_app`
+
+**Lưu ý quan trọng:**
+- ⚠️ Nhớ thay `YOUR_CLIENT_TOKEN` trong strings.xml
+- ⚠️ Nhớ add Key Hash vào Facebook Console
+- ⚠️ Nhớ enable Facebook trong Firebase Authentication

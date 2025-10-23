@@ -52,5 +52,27 @@
 	<string>This app needs access to your camera to take a profile picture.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to your microphone for video recording.</string>
+
+	<!-- Facebook Configuration -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb1151774536907281</string>
+			</array>
+		</dict>
+	</array>
+	<key>FacebookAppID</key>
+	<string>1151774536907281</string>
+	<key>FacebookDisplayName</key>
+	<string>Flutter Movie App</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 </dict>
 </plist>

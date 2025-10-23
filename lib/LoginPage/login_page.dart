@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../HomePage/HomePage.dart';
+import '../main_screen.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 import 'phone_auth_page.dart';
@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(username: username),
+              builder: (context) => MainScreen(username: username),
             ),
           );
         }
@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: username),
+            builder: (context) => MainScreen(username: username),
           ),
         );
       }
@@ -149,11 +149,11 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
 
-        // Navigate to HomePage
+        // Navigate to MainScreen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: username),
+            builder: (context) => MainScreen(username: username),
           ),
         );
       }

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../HomePage/HomePage.dart';
+import '../main_screen.dart';
 import '../services/auth_service.dart';
 
 class OtpVerificationPage extends StatefulWidget {
@@ -119,7 +119,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => HomePage(username: username),
+                  builder: (context) => MainScreen(username: username),
                 ),
                 (route) => false,
               );
@@ -179,11 +179,11 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             ),
           );
 
-          // Navigate to HomePage
+          // Navigate to MainScreen
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(username: username),
+              builder: (context) => MainScreen(username: username),
             ),
             (route) => false,
           );

@@ -379,17 +379,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     return Scaffold(
         backgroundColor: const Color(0xFF001E3C),
-        drawer: _buildDrawer(context),
         body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               SliverAppBar(
-                  leading: Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white, size: 28),
-                      onPressed: () => Scaffold.of(context).openDrawer(),
-                    ),
-                  ),
+                  automaticallyImplyLeading: false,
                   iconTheme: const IconThemeData(color: Colors.white),
                   backgroundColor: const Color(0xFF0A1929).withValues(alpha: 0.95),
                   title: Container(

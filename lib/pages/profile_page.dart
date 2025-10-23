@@ -12,6 +12,8 @@ import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 import 'change_password_page.dart';
 import 'recently_viewed_all_page.dart';
+import 'settings_page.dart';
+import '../LoginPage/login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -409,7 +411,27 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         backgroundColor: const Color(0xFF0A1929),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false,
+        actions: [
+          // Settings button ở góc phải
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.settings,
+              color: Colors.white,
+              size: 26,
+            ),
+            tooltip: 'Settings',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -449,9 +471,103 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     // Account Stats Card
                     _buildAccountStatsCard(),
+                    const SizedBox(height: 30),
+
+                    // Logout Button ở dưới cùng
+                    _buildLogoutButton(),
+                    const SizedBox(height: 30),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  // Logout Button Widget
+  Widget _buildLogoutButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          // Show confirmation dialog
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                backgroundColor: const Color(0xFF0A1929),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                title: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.red[300], size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Logout',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Are you sure you want to logout?',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.cyan[400]),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[600],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Logout'),
+                  ),
+                ],
+              );
+            },
+          );
+
+          if (confirmed == true) {
+            // Perform logout
+            await _authService.signOut();
+
+            if (mounted) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginPage(),
+                ),
+                (route) => false,
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.logout, size: 22),
+        label: const Text(
+          'LOGOUT',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red[700],
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 8,
+          shadowColor: Colors.red.withValues(alpha: 0.5),
+        ),
       ),
     );
   }
