@@ -2,14 +2,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_movie_app/reapeatedfunction/userreview.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_movie_app/reapeatedfunction/discussion_tabs.dart';
 import 'package:flutter_movie_app/reapeatedfunction/slider.dart';
 import 'package:flutter_movie_app/main_screen.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
 import 'package:flutter_movie_app/apikey/apikey.dart';
-import 'package:flutter_movie_app/services/favorites_service.dart';
-import 'package:flutter_movie_app/services/recently_viewed_service.dart';
-import 'package:flutter_movie_app/models/movie.dart';
+import 'package:flutter_movie_app/config/api_config.dart';
+import 'package:flutter_movie_app/services/backend_favorites_service.dart';
+import 'package:flutter_movie_app/services/backend_recently_viewed_service.dart';
+import 'package:flutter_movie_app/services/tv_series_detail_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -24,28 +26,109 @@ class TvSeriesDetail extends StatefulWidget {
 class _TvSeriesDetailState extends State<TvSeriesDetail> {
   var tvseriesdetaildata;
   List<Map<String, dynamic>> TvSeriesDetails = [];
-  List<Map<String, dynamic>> TvSeriesReview = [];
   List<Map<String, dynamic>> similarserieslist = [];
   List<Map<String, dynamic>> recommendserieslist = [];
   List<Map<String, dynamic>> seriestrailerslist = [];
 
   // Favorites
-  final FavoritesService _favoritesService = FavoritesService();
-  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
   bool _isFavorite = false;
   bool _isLoading = true;
+  
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
+  // Helper method to check if video type is acceptable for playback
+  bool _isAcceptableVideoType(String type) {
+    // Accept trailers first, then teasers, clips, and featurettes
+    const acceptableTypes = ['Trailer', 'Teaser', 'Clip', 'Featurette'];
+    return acceptableTypes.contains(type);
+  }
 
   Future<void> tvseriesdetailfunc() async {
+    // Try Backend API first
+    try {
+      print('📺 Loading TV series details from Backend API...');
+      final tvSeriesDetail = await TvSeriesDetailService.getTvSeriesDetailByTmdbId(
+        widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      );
+
+      if (tvSeriesDetail != null) {
+        print('✅ Loaded from Backend! Title: ${tvSeriesDetail.name}');
+        
+        // Populate TvSeriesDetails from Backend
+        TvSeriesDetails.add({
+          'backdrop_path': tvSeriesDetail.backdropPath?.replaceAll('https://image.tmdb.org/t/p/w500', '') ?? '',
+          'title': tvSeriesDetail.name,
+          'vote_average': tvSeriesDetail.voteAverage,
+          'overview': tvSeriesDetail.overview,
+          'status': tvSeriesDetail.status,
+          'releasedate': tvSeriesDetail.firstAirDate ?? '',
+        });
+
+        // Add genres
+        for (var genre in tvSeriesDetail.genres) {
+          TvSeriesDetails.add({
+            'genre': genre.name,
+          });
+        }
+
+        // Add creators from crew (filter for Creator or Executive Producer)
+        final creators = tvSeriesDetail.crew
+            .where((c) => c.job == 'Creator' || c.job == 'Executive Producer')
+            .toList();
+        for (var creator in creators) {
+          TvSeriesDetails.add({
+            'creator': creator.name,
+            'creatorprofile': creator.profilePath,
+          });
+        }
+
+        // Add seasons
+        for (var season in tvSeriesDetail.seasons) {
+          TvSeriesDetails.add({
+            'season': season.name,
+            'episode_count': season.episodeCount,
+          });
+        }
+
+        // Add trailers from videos
+        for (var video in tvSeriesDetail.trailers) {
+          seriestrailerslist.add({
+            'key': video.key,
+          });
+        }
+        // Add fallback trailer if no trailers
+        if (seriestrailerslist.isEmpty) {
+          seriestrailerslist.add({'key': 'aJ0cZTcTh90'});
+        }
+
+        // Load additional data from TMDB (reviews, similar, recommended)
+        await _loadAdditionalDataFromTMDB();
+        
+        return;
+      } else {
+        print('⚠️  TV series not found in Backend, falling back to TMDB...');
+      }
+    } catch (e) {
+      print('❌ Error loading from Backend: $e');
+      print('⚠️  Falling back to TMDB...');
+    }
+
+    // Fallback to original TMDB API
     var tvseriesdetailurl =
         'https://api.themoviedb.org/3/tv/${widget.id}?api_key=${apikey}';
-    var tvseriesreviewurl =
-        'https://api.themoviedb.org/3/tv/${widget.id}/reviews?api_key=${apikey}';
-    var similarseriesurl =
+    
+    // Backend-first URLs for Similar and Recommended
+    var similarseriesurl = '${ApiConfig.baseUrl}/api/tv/similar';
+    var recommendseriesurl = '${ApiConfig.baseUrl}/api/tv/recommended';
+    
+    // TMDB fallback URLs
+    var similarseriesurl_tmdb =
         'https://api.themoviedb.org/3/tv/${widget.id}/similar?api_key=${apikey}';
-    var recommendseriesurl =
+    var recommendseriesurl_tmdb =
         'https://api.themoviedb.org/3/tv/${widget.id}/recommendations?api_key=${apikey}';
-    var seriestrailersurl =
-        'https://api.themoviedb.org/3/tv/${widget.id}/videos?api_key=${apikey}';
+    
+    // Try Backend API first for videos, fallback to TMDB
+    var seriestrailersurl = '${ApiConfig.baseUrl}/api/tv-series/tmdb/${widget.id}/videos';
 
     var tvseriesdetailresponse = await http.get(Uri.parse(tvseriesdetailurl));
     if (tvseriesdetailresponse.statusCode == 200) {
@@ -60,101 +143,345 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
           'releasedate': tvseriesdetaildata['first_air_date'],
         });
       }
-      for (var i = 0; i < tvseriesdetaildata['genres'].length; i++) {
-        TvSeriesDetails.add({
-          'genre': tvseriesdetaildata['genres'][i]['name'],
-        });
-      }
-      for (var i = 0; i < tvseriesdetaildata['created_by'].length; i++) {
-        TvSeriesDetails.add({
-          'creator': tvseriesdetaildata['created_by'][i]['name'],
-          'creatorprofile': tvseriesdetaildata['created_by'][i]['profile_path'],
-        });
-      }
-      for (var i = 0; i < tvseriesdetaildata['seasons'].length; i++) {
-        TvSeriesDetails.add({
-          'season': tvseriesdetaildata['seasons'][i]['name'],
-          'episode_count': tvseriesdetaildata['seasons'][i]['episode_count'],
-        });
-      }
-    } else {}
-
-    var tvseriesreviewresponse = await http.get(Uri.parse(tvseriesreviewurl));
-    if (tvseriesreviewresponse.statusCode == 200) {
-      var tvseriesreviewdata = jsonDecode(tvseriesreviewresponse.body);
-      for (var i = 0; i < tvseriesreviewdata['results'].length; i++) {
-        TvSeriesReview.add({
-          'name': tvseriesreviewdata['results'][i]['author'],
-          'review': tvseriesreviewdata['results'][i]['content'],
-          "rating": tvseriesreviewdata['results'][i]['author_details']
-                      ['rating'] ==
-                  null
-              ? "Not Rated"
-              : tvseriesreviewdata['results'][i]['author_details']['rating']
-                  .toString(),
-          "avatarphoto": tvseriesreviewdata['results'][i]['author_details']
-                      ['avatar_path'] ==
-                  null
-              ? "https://www.pngitem.com/pimgs/m/146-1468479_my-profile-icon-blank-profile-picture-circle-hd.png"
-              : "https://image.tmdb.org/t/p/w500" +
-                  tvseriesreviewdata['results'][i]['author_details']
-                      ['avatar_path'],
-          "creationdate":
-              tvseriesreviewdata['results'][i]['created_at'].substring(0, 10),
-          "fullreviewurl": tvseriesreviewdata['results'][i]['url'],
-        });
-      }
-    } else {}
-
-    var similarseriesresponse = await http.get(Uri.parse(similarseriesurl));
-    if (similarseriesresponse.statusCode == 200) {
-      var similarseriesdata = jsonDecode(similarseriesresponse.body);
-      for (var i = 0; i < similarseriesdata['results'].length; i++) {
-        similarserieslist.add({
-          'poster_path': similarseriesdata['results'][i]['poster_path'],
-          'name': similarseriesdata['results'][i]['original_name'],
-          'vote_average': similarseriesdata['results'][i]['vote_average'],
-          'id': similarseriesdata['results'][i]['id'],
-          'date': similarseriesdata['results'][i]['first_air_date'],
-        });
-      }
-    } else {}
-
-    var recommendseriesresponse = await http.get(Uri.parse(recommendseriesurl));
-    if (recommendseriesresponse.statusCode == 200) {
-      var recommendseriesdata = jsonDecode(recommendseriesresponse.body);
-      for (var i = 0; i < recommendseriesdata['results'].length; i++) {
-        recommendserieslist.add({
-          'poster_path': recommendseriesdata['results'][i]['poster_path'],
-          'name': recommendseriesdata['results'][i]['original_name'],
-          'vote_average': recommendseriesdata['results'][i]['vote_average'],
-          'id': recommendseriesdata['results'][i]['id'],
-          'date': recommendseriesdata['results'][i]['first_air_date'],
-        });
-      }
-    } else {}
-
-    var tvseriestrailerresponse = await http.get(Uri.parse(seriestrailersurl));
-    if (tvseriestrailerresponse.statusCode == 200) {
-      var tvseriestrailerdata = jsonDecode(tvseriestrailerresponse.body);
-      // print(tvseriestrailerdata);
-      for (var i = 0; i < tvseriestrailerdata['results'].length; i++) {
-        //add only if type is trailer
-        if (tvseriestrailerdata['results'][i]['type'] == "Trailer") {
-          seriestrailerslist.add({
-            'key': tvseriestrailerdata['results'][i]['key'],
+      
+      // Only process TMDB-specific data if tvseriesdetaildata is available
+      if (tvseriesdetaildata != null) {
+        for (var i = 0; i < tvseriesdetaildata['genres'].length; i++) {
+          TvSeriesDetails.add({
+            'genre': tvseriesdetaildata['genres'][i]['name'],
+          });
+        }
+        for (var i = 0; i < tvseriesdetaildata['created_by'].length; i++) {
+          TvSeriesDetails.add({
+            'creator': tvseriesdetaildata['created_by'][i]['name'],
+            'creatorprofile': tvseriesdetaildata['created_by'][i]['profile_path'],
+          });
+        }
+        for (var i = 0; i < tvseriesdetaildata['seasons'].length; i++) {
+          TvSeriesDetails.add({
+            'season': tvseriesdetaildata['seasons'][i]['name'],
+            'episode_count': tvseriesdetaildata['seasons'][i]['episode_count'],
           });
         }
       }
-      seriestrailerslist.add({'key': 'aJ0cZTcTh90'});
     } else {}
-    print(seriestrailerslist);
+
+    // Load Similar series from Backend first, fallback to TMDB
+    try {
+      print('📊 Loading TV Similar from Backend...');
+      var similarseriesresponse = await http.get(Uri.parse(similarseriesurl));
+      if (similarseriesresponse.statusCode == 200) {
+        var similarseriesdata = jsonDecode(similarseriesresponse.body);
+        
+        if (similarseriesdata.containsKey('success') && similarseriesdata['success'] == true) {
+          print('✅ TV Similar loaded from Backend');
+          var results = similarseriesdata['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            similarserieslist.add({
+              'poster_path': results[i]['poster_path'],
+              'name': results[i]['original_name'] ?? results[i]['name'],
+              'vote_average': results[i]['vote_average'],
+              'id': results[i]['id'],
+              'date': results[i]['first_air_date'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  TV Similar falling back to TMDB: $e');
+      try {
+        var similarseriesresponse_tmdb = await http.get(Uri.parse(similarseriesurl_tmdb));
+        if (similarseriesresponse_tmdb.statusCode == 200) {
+          var similarseriesdata = jsonDecode(similarseriesresponse_tmdb.body);
+          for (var i = 0; i < similarseriesdata['results'].length; i++) {
+            similarserieslist.add({
+              'poster_path': similarseriesdata['results'][i]['poster_path'],
+              'name': similarseriesdata['results'][i]['original_name'],
+              'vote_average': similarseriesdata['results'][i]['vote_average'],
+              'id': similarseriesdata['results'][i]['id'],
+              'date': similarseriesdata['results'][i]['first_air_date'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
+
+    // Load Recommended series from Backend first, fallback to TMDB
+    try {
+      print('📊 Loading TV Recommended from Backend...');
+      var recommendseriesresponse = await http.get(Uri.parse(recommendseriesurl));
+      if (recommendseriesresponse.statusCode == 200) {
+        var recommendseriesdata = jsonDecode(recommendseriesresponse.body);
+        
+        if (recommendseriesdata.containsKey('success') && recommendseriesdata['success'] == true) {
+          print('✅ TV Recommended loaded from Backend');
+          var results = recommendseriesdata['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            recommendserieslist.add({
+              'poster_path': results[i]['poster_path'],
+              'name': results[i]['original_name'] ?? results[i]['name'],
+              'vote_average': results[i]['vote_average'],
+              'id': results[i]['id'],
+              'date': results[i]['first_air_date'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  TV Recommended falling back to TMDB: $e');
+      try {
+        var recommendseriesresponse_tmdb = await http.get(Uri.parse(recommendseriesurl_tmdb));
+        if (recommendseriesresponse_tmdb.statusCode == 200) {
+          var recommendseriesdata = jsonDecode(recommendseriesresponse_tmdb.body);
+          for (var i = 0; i < recommendseriesdata['results'].length; i++) {
+            recommendserieslist.add({
+              'poster_path': recommendseriesdata['results'][i]['poster_path'],
+              'name': recommendseriesdata['results'][i]['original_name'],
+              'vote_average': recommendseriesdata['results'][i]['vote_average'],
+              'id': recommendseriesdata['results'][i]['id'],
+              'date': recommendseriesdata['results'][i]['first_air_date'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
+    // Try Backend API first for videos, fallback to TMDB
+    bool loadedFromBackend = false;
+    try {
+      var tvseriestrailerresponse = await http.get(Uri.parse(seriestrailersurl));
+      if (tvseriestrailerresponse.statusCode == 200) {
+        var tvseriestrailerdata = jsonDecode(tvseriestrailerresponse.body);
+        
+        // Check if Backend API response (has 'success' field)
+        if (tvseriestrailerdata.containsKey('success') && tvseriestrailerdata['success'] == true) {
+          print('✅ Loading TV videos from Backend...');
+          var results = tvseriestrailerdata['data']['results'];
+          print('📹 Found ${results.length} videos from Backend');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < results.length; i++) {
+            print('  - Type: ${results[i]['type']}, Name: ${results[i]['name']}');
+            if (results[i]['type'] == "Trailer" && results[i]['key'] != null) {
+              seriestrailerslist.add({'key': results[i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (seriestrailerslist.isEmpty) {
+            for (var i = 0; i < results.length; i++) {
+              if (_isAcceptableVideoType(results[i]['type']) && results[i]['key'] != null) {
+                seriestrailerslist.add({'key': results[i]['key']});
+                break;
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        } else {
+          // TMDB response format
+          print('📹 Found ${tvseriestrailerdata['results'].length} videos from TMDB');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < tvseriestrailerdata['results'].length; i++) {
+            print('  - Type: ${tvseriestrailerdata['results'][i]['type']}, Name: ${tvseriestrailerdata['results'][i]['name']}');
+            if (tvseriestrailerdata['results'][i]['type'] == "Trailer" && tvseriestrailerdata['results'][i]['key'] != null) {
+              seriestrailerslist.add({'key': tvseriestrailerdata['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (seriestrailerslist.isEmpty) {
+            for (var i = 0; i < tvseriestrailerdata['results'].length; i++) {
+              if (_isAcceptableVideoType(tvseriestrailerdata['results'][i]['type']) && 
+                  tvseriestrailerdata['results'][i]['key'] != null) {
+                seriestrailerslist.add({'key': tvseriestrailerdata['results'][i]['key']});
+                break;
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        }
+      } else {
+        print('⚠️  Backend returned status ${tvseriestrailerresponse.statusCode}, falling back to TMDB...');
+      }
+    } catch (e) {
+      print('❌ Error loading videos from Backend: $e');
+      print('⚠️  Falling back to TMDB for videos...');
+    }
+    
+    // If not loaded from Backend, fallback to TMDB
+    if (!loadedFromBackend) {
+      var tmdbVideosUrl = 'https://api.themoviedb.org/3/tv/${widget.id}/videos?api_key=${apikey}';
+      try {
+        var tmdbResponse = await http.get(Uri.parse(tmdbVideosUrl));
+        if (tmdbResponse.statusCode == 200) {
+          var tmdbData = jsonDecode(tmdbResponse.body);
+          print('📹 TMDB Fallback: Found ${tmdbData['results'].length} videos');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < tmdbData['results'].length; i++) {
+            print('  - Type: ${tmdbData['results'][i]['type']}, Name: ${tmdbData['results'][i]['name']}');
+            if (tmdbData['results'][i]['type'] == "Trailer" && tmdbData['results'][i]['key'] != null) {
+              seriestrailerslist.add({'key': tmdbData['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (seriestrailerslist.isEmpty) {
+            for (var i = 0; i < tmdbData['results'].length; i++) {
+              if (_isAcceptableVideoType(tmdbData['results'][i]['type']) && 
+                  tmdbData['results'][i]['key'] != null) {
+                seriestrailerslist.add({'key': tmdbData['results'][i]['key']});
+                break;
+              }
+            }
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback also failed: $tmdbError');
+      }
+    }
+    
+    // Only add demo trailer if absolutely no videos found
+    if (seriestrailerslist.isEmpty) {
+      print('⚠️  No videos found, adding demo trailer');
+      seriestrailerslist.add({'key': 'aJ0cZTcTh90'});
+    } else {
+      print('✅ Found ${seriestrailerslist.length} video(s) to display');
+    }
+    print('Final seriestrailerslist: ${seriestrailerslist.map((v) => v['key']).toList()}');
+  }
+
+  // Load additional data from TMDB (similar, recommended)
+  Future<void> _loadAdditionalDataFromTMDB() async {
+    // Backend-first URLs for Similar and Recommended
+    var similarseriesurl = '${ApiConfig.baseUrl}/api/tv/similar';
+    var recommendseriesurl = '${ApiConfig.baseUrl}/api/tv/recommended';
+    
+    // TMDB fallback URLs
+    var similarseriesurl_tmdb =
+        'https://api.themoviedb.org/3/tv/${widget.id}/similar?api_key=${apikey}';
+    var recommendseriesurl_tmdb =
+        'https://api.themoviedb.org/3/tv/${widget.id}/recommendations?api_key=${apikey}';
+
+    // Load Similar series from Backend first, fallback to TMDB
+    try {
+      print('📊 [Additional] Loading TV Similar from Backend...');
+      var similarseriesresponse = await http.get(Uri.parse(similarseriesurl));
+      if (similarseriesresponse.statusCode == 200) {
+        var similarseriesdata = jsonDecode(similarseriesresponse.body);
+        
+        if (similarseriesdata.containsKey('success') && similarseriesdata['success'] == true) {
+          print('✅ [Additional] TV Similar loaded from Backend');
+          var results = similarseriesdata['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            similarserieslist.add({
+              'poster_path': results[i]['poster_path'],
+              'name': results[i]['original_name'] ?? results[i]['name'],
+              'vote_average': results[i]['vote_average'],
+              'id': results[i]['id'],
+              'date': results[i]['first_air_date'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  [Additional] TV Similar falling back to TMDB: $e');
+      try {
+        var similarseriesresponse_tmdb = await http.get(Uri.parse(similarseriesurl_tmdb));
+        if (similarseriesresponse_tmdb.statusCode == 200) {
+          var similarseriesdata = jsonDecode(similarseriesresponse_tmdb.body);
+          for (var i = 0; i < similarseriesdata['results'].length; i++) {
+            similarserieslist.add({
+              'poster_path': similarseriesdata['results'][i]['poster_path'],
+              'name': similarseriesdata['results'][i]['original_name'],
+              'vote_average': similarseriesdata['results'][i]['vote_average'],
+              'id': similarseriesdata['results'][i]['id'],
+              'date': similarseriesdata['results'][i]['first_air_date'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
+
+    // Load Recommended series from Backend first, fallback to TMDB
+    try {
+      print('📊 [Additional] Loading TV Recommended from Backend...');
+      var recommendseriesresponse = await http.get(Uri.parse(recommendseriesurl));
+      if (recommendseriesresponse.statusCode == 200) {
+        var recommendseriesdata = jsonDecode(recommendseriesresponse.body);
+        
+        if (recommendseriesdata.containsKey('success') && recommendseriesdata['success'] == true) {
+          print('✅ [Additional] TV Recommended loaded from Backend');
+          var results = recommendseriesdata['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            recommendserieslist.add({
+              'poster_path': results[i]['poster_path'],
+              'name': results[i]['original_name'] ?? results[i]['name'],
+              'vote_average': results[i]['vote_average'],
+              'id': results[i]['id'],
+              'date': results[i]['first_air_date'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  [Additional] TV Recommended falling back to TMDB: $e');
+      try {
+        var recommendseriesresponse_tmdb = await http.get(Uri.parse(recommendseriesurl_tmdb));
+        if (recommendseriesresponse_tmdb.statusCode == 200) {
+          var recommendseriesdata = jsonDecode(recommendseriesresponse_tmdb.body);
+          for (var i = 0; i < recommendseriesdata['results'].length; i++) {
+            recommendserieslist.add({
+              'poster_path': recommendseriesdata['results'][i]['poster_path'],
+              'name': recommendseriesdata['results'][i]['original_name'],
+              'vote_average': recommendseriesdata['results'][i]['vote_average'],
+              'id': recommendseriesdata['results'][i]['id'],
+              'date': recommendseriesdata['results'][i]['first_air_date'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
   }
 
   Future<void> _checkFavoriteStatus() async {
-    final isFav = await _favoritesService.isFavoriteMovie(
-      widget.id is int ? widget.id : int.parse(widget.id.toString()),
-      'tv',
+    if (currentUser == null) return;
+    
+    final seriesId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final isFav = await BackendFavoritesService.isFavorite(
+      userId: currentUser!.uid,
+      mediaType: 'tv',
+      mediaId: seriesId,
     );
     setState(() {
       _isFavorite = isFav;
@@ -162,19 +489,32 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (TvSeriesDetails.isEmpty) return;
+    if (TvSeriesDetails.isEmpty || currentUser == null) return;
 
-    final movie = Movie(
-      id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
-      title: TvSeriesDetails[0]['title'],
-      posterPath: TvSeriesDetails[0]['backdrop_path'] ?? '',
-      overview: TvSeriesDetails[0]['overview'],
-      voteAverage: (TvSeriesDetails[0]['vote_average'] as num).toDouble(),
-      releaseDate: TvSeriesDetails[0]['releasedate'],
-      mediaType: 'tv',
-    );
+    final seriesId = widget.id is int ? widget.id : int.parse(widget.id.toString());
 
-    await _favoritesService.toggleFavorite(movie);
+    if (_isFavorite) {
+      // Remove from favorites
+      await BackendFavoritesService.removeFavoriteByMedia(
+        userId: currentUser!.uid,
+        mediaType: 'tv',
+        mediaId: seriesId,
+      );
+    } else {
+      // Add to favorites
+      await BackendFavoritesService.addFavorite(
+        userId: currentUser!.uid,
+        mediaType: 'tv',
+        mediaId: seriesId,
+        title: TvSeriesDetails[0]['title'] ?? '',
+        posterPath: TvSeriesDetails[0]['poster_path'] ?? TvSeriesDetails[0]['backdrop_path'] ?? '',
+        backdropPath: TvSeriesDetails[0]['backdrop_path'] ?? '',
+        overview: TvSeriesDetails[0]['overview'] ?? '',
+        rating: (TvSeriesDetails[0]['vote_average'] as num?)?.toDouble() ?? 0.0,
+        releaseDate: TvSeriesDetails[0]['releasedate'] ?? '',
+      );
+    }
+
     await _checkFavoriteStatus();
 
     if (mounted) {
@@ -452,27 +792,44 @@ Shared from Flick Movie App
   }
 
   Future<void> _addToRecentlyViewed() async {
-    if (TvSeriesDetails.isEmpty) {
-      print('TvSeriesDetail: Cannot add to recently viewed - TvSeriesDetails is empty');
+    if (TvSeriesDetails.isEmpty || currentUser == null) {
+      print('TvSeriesDetail: Cannot add to recently viewed - TvSeriesDetails is empty or user not logged in');
       return;
     }
 
     try {
-      final movie = Movie(
-        id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
-        title: TvSeriesDetails[0]['title'],
-        posterPath: tvseriesdetaildata['poster_path'] ?? TvSeriesDetails[0]['backdrop_path'] ?? '',
-        overview: TvSeriesDetails[0]['overview'],
-        voteAverage: (TvSeriesDetails[0]['vote_average'] as num).toDouble(),
-        releaseDate: TvSeriesDetails[0]['releasedate'],
-        mediaType: 'tv',
-      );
+      // Get poster path - check tvseriesdetaildata first (TMDB), then use backdrop from Backend
+      String posterPath = '';
+      if (tvseriesdetaildata != null && tvseriesdetaildata['poster_path'] != null) {
+        posterPath = tvseriesdetaildata['poster_path'];
+      } else if (TvSeriesDetails[0]['backdrop_path'] != null) {
+        posterPath = TvSeriesDetails[0]['backdrop_path'];
+      }
 
-      print('TvSeriesDetail: Adding to recently viewed - ${movie.title}');
-      final success = await _recentlyViewedService.addToRecentlyViewed(movie);
-      print('TvSeriesDetail: Add to recently viewed result: $success');
+      final seriesId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+      final title = TvSeriesDetails[0]['title'] ?? 'Unknown';
+      final overview = TvSeriesDetails[0]['overview'] ?? '';
+      final voteAverage = (TvSeriesDetails[0]['vote_average'] as num?)?.toDouble() ?? 0.0;
+      final releaseDate = TvSeriesDetails[0]['releasedate'] ?? '';
+      final backdropPath = TvSeriesDetails[0]['backdrop_path'] ?? '';
+
+      print('TvSeriesDetail: Tracking view - $title');
+      
+      final success = await BackendRecentlyViewedService.trackView(
+        userId: currentUser!.uid,
+        mediaType: 'tv',
+        mediaId: seriesId,
+        title: title,
+        posterPath: posterPath,
+        backdropPath: backdropPath,
+        overview: overview,
+        rating: voteAverage,
+        releaseDate: releaseDate,
+      );
+      
+      print('TvSeriesDetail: Track view result: $success');
     } catch (e) {
-      print('TvSeriesDetail: Error adding to recently viewed: $e');
+      print('TvSeriesDetail: Error tracking view: $e');
     }
   }
 
@@ -552,9 +909,20 @@ Shared from Flick Movie App
                           collapseMode: CollapseMode.parallax,
                           background: FittedBox(
                             fit: BoxFit.fill,
-                            child: trailerwatch(
-                              trailerytid: seriestrailerslist[0]['key'],
-                            ),
+                            child: seriestrailerslist.isNotEmpty
+                              ? trailerwatch(
+                                  trailerytid: seriestrailerslist[0]['key'],
+                                )
+                              : Container(
+                                  color: Colors.black,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.tv,
+                                      size: 100,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
                           ),
                         )),
                     SliverList(
@@ -623,7 +991,7 @@ Shared from Flick Movie App
                           spacing: 8,
                           runSpacing: 8,
                           children: List.generate(
-                            tvseriesdetaildata['genres']!.length,
+                            TvSeriesDetails.where((item) => item.containsKey('genre')).length,
                             (index) => Container(
                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                               decoration: BoxDecoration(
@@ -710,7 +1078,7 @@ Shared from Flick Movie App
                               icon: Icons.live_tv,
                               iconColor: Colors.purple,
                               title: 'Total Seasons',
-                              value: '${tvseriesdetaildata['seasons'].length} Seasons',
+                              value: '${TvSeriesDetails.where((item) => item.containsKey('season')).length} Seasons',
                             ),
                             const SizedBox(height: 12),
                             _buildInfoCard(
@@ -723,41 +1091,57 @@ Shared from Flick Movie App
                         ),
                       ),
 
-                      // User Reviews
-                      if (TvSeriesReview.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Colors.cyan, Colors.teal],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                  borderRadius: BorderRadius.circular(2),
+                      // Chat Room Section
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 4,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Colors.cyan, Colors.teal],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
                                 ),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'User Reviews',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Discussion',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Container(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF001E3C),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.cyan.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: DiscussionTabs(
+                              mediaId: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+                              mediaType: 'tv',
+                            ),
                           ),
                         ),
-                      if (TvSeriesReview.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20.0, top: 10),
-                          child: UserReview(reviewDetails: TvSeriesReview),
-                        ),
+                      ),
+
                       sliderlist(similarserieslist, 'Similar Series', 'tv',
                           similarserieslist.length),
                       sliderlist(recommendserieslist, 'Recommended Series',

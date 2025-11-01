@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_movie_app/apikey/apikey.dart';
+import 'package:flutter_movie_app/config/api_config.dart';
 import 'package:flutter_movie_app/reapeatedfunction/slider.dart';
 import 'package:flutter_movie_app/main_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_movie_app/reapeatedfunction/trailerui.dart';
-import 'package:flutter_movie_app/reapeatedfunction/userreview.dart';
-import 'package:flutter_movie_app/services/favorites_service.dart';
-import 'package:flutter_movie_app/services/recently_viewed_service.dart';
-import 'package:flutter_movie_app/models/movie.dart';
+import 'package:flutter_movie_app/reapeatedfunction/discussion_tabs.dart';
+import 'package:flutter_movie_app/services/backend_favorites_service.dart';
+import 'package:flutter_movie_app/services/backend_recently_viewed_service.dart';
+import 'package:flutter_movie_app/services/movie_detail_service.dart';
 import 'package:share_plus/share_plus.dart';
 
 class MoviesDetail extends StatefulWidget {
@@ -23,7 +25,6 @@ class MoviesDetail extends StatefulWidget {
 
 class _MoviesDetailState extends State<MoviesDetail> {
   List<Map<String, dynamic>> MovieDetails = [];
-  List<Map<String, dynamic>> UserReviews = [];
   List<Map<String, dynamic>> similarmovieslist = [];
   List<Map<String, dynamic>> recommendedmovieslist = [];
   List<Map<String, dynamic>> movietrailerslist = [];
@@ -31,10 +32,17 @@ class _MoviesDetailState extends State<MoviesDetail> {
   List MoviesGeneres = [];
 
   // Favorites
-  final FavoritesService _favoritesService = FavoritesService();
-  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
   bool _isFavorite = false;
   bool _isLoading = true;
+  
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
+  // Helper method to check if video type is acceptable for playback
+  bool _isAcceptableVideoType(String type) {
+    // Accept trailers first, then teasers, clips, and featurettes
+    const acceptableTypes = ['Trailer', 'Teaser', 'Clip', 'Featurette'];
+    return acceptableTypes.contains(type);
+  }
 
   @override
   void initState() {
@@ -52,35 +60,48 @@ class _MoviesDetailState extends State<MoviesDetail> {
   }
 
   Future<void> _addToRecentlyViewed() async {
-    if (MovieDetails.isEmpty) {
-      print('MoviesDetail: Cannot add to recently viewed - MovieDetails is empty');
+    if (MovieDetails.isEmpty || currentUser == null) {
+      print('MoviesDetail: Cannot add to recently viewed - MovieDetails is empty or user not logged in');
       return;
     }
 
     try {
-      final movie = Movie(
-        id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
-        title: MovieDetails[0]['title'],
-        posterPath: MovieDetails[0]['poster_path'] ?? MovieDetails[0]['backdrop_path'] ?? '',
-        overview: MovieDetails[0]['overview'],
-        voteAverage: (MovieDetails[0]['vote_average'] as num).toDouble(),
-        releaseDate: MovieDetails[0]['release_date'],
-        mediaType: 'movie',
-      );
+      final movieId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+      final title = MovieDetails[0]['title'] ?? 'Unknown';
+      final posterPath = MovieDetails[0]['poster_path'] ?? MovieDetails[0]['backdrop_path'] ?? '';
+      final overview = MovieDetails[0]['overview'] ?? '';
+      final voteAverage = (MovieDetails[0]['vote_average'] as num?)?.toDouble() ?? 0.0;
+      final releaseDate = MovieDetails[0]['release_date'] ?? '';
+      final backdropPath = MovieDetails[0]['backdrop_path'] ?? '';
 
-      print('MoviesDetail: Adding to recently viewed - ${movie.title}');
-      print('MoviesDetail: posterPath = ${movie.posterPath}');
-      final success = await _recentlyViewedService.addToRecentlyViewed(movie);
-      print('MoviesDetail: Add to recently viewed result: $success');
+      print('MoviesDetail: Tracking view - $title');
+      
+      final success = await BackendRecentlyViewedService.trackView(
+        userId: currentUser!.uid,
+        mediaType: 'movie',
+        mediaId: movieId,
+        title: title,
+        posterPath: posterPath,
+        backdropPath: backdropPath,
+        overview: overview,
+        rating: voteAverage,
+        releaseDate: releaseDate,
+      );
+      
+      print('MoviesDetail: Track view result: $success');
     } catch (e) {
-      print('MoviesDetail: Error adding to recently viewed: $e');
+      print('MoviesDetail: Error tracking view: $e');
     }
   }
 
   Future<void> _checkFavoriteStatus() async {
-    final isFav = await _favoritesService.isFavoriteMovie(
-      widget.id is int ? widget.id : int.parse(widget.id.toString()),
-      'movie',
+    if (currentUser == null) return;
+    
+    final movieId = widget.id is int ? widget.id : int.parse(widget.id.toString());
+    final isFav = await BackendFavoritesService.isFavorite(
+      userId: currentUser!.uid,
+      mediaType: 'movie',
+      mediaId: movieId,
     );
     setState(() {
       _isFavorite = isFav;
@@ -88,19 +109,32 @@ class _MoviesDetailState extends State<MoviesDetail> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (MovieDetails.isEmpty) return;
+    if (MovieDetails.isEmpty || currentUser == null) return;
 
-    final movie = Movie(
-      id: widget.id is int ? widget.id : int.parse(widget.id.toString()),
-      title: MovieDetails[0]['title'],
-      posterPath: MovieDetails[0]['backdrop_path'] ?? '',
-      overview: MovieDetails[0]['overview'],
-      voteAverage: (MovieDetails[0]['vote_average'] as num).toDouble(),
-      releaseDate: MovieDetails[0]['release_date'],
-      mediaType: 'movie',
-    );
+    final movieId = widget.id is int ? widget.id : int.parse(widget.id.toString());
 
-    await _favoritesService.toggleFavorite(movie);
+    if (_isFavorite) {
+      // Remove from favorites
+      await BackendFavoritesService.removeFavoriteByMedia(
+        userId: currentUser!.uid,
+        mediaType: 'movie',
+        mediaId: movieId,
+      );
+    } else {
+      // Add to favorites
+      await BackendFavoritesService.addFavorite(
+        userId: currentUser!.uid,
+        mediaType: 'movie',
+        mediaId: movieId,
+        title: MovieDetails[0]['title'] ?? '',
+        posterPath: MovieDetails[0]['poster_path'] ?? MovieDetails[0]['backdrop_path'] ?? '',
+        backdropPath: MovieDetails[0]['backdrop_path'] ?? '',
+        overview: MovieDetails[0]['overview'] ?? '',
+        rating: (MovieDetails[0]['vote_average'] as num?)?.toDouble() ?? 0.0,
+        releaseDate: MovieDetails[0]['release_date'] ?? '',
+      );
+    }
+
     await _checkFavoriteStatus();
 
     if (mounted) {
@@ -296,16 +330,61 @@ Shared from Flick Movie App
   }
 
   Future Moviedetails() async {
+    // Try Backend API first
+    try {
+      print('🎬 Loading movie details from Backend API...');
+      final movieDetail = await MovieDetailService.getMovieDetailByTmdbId(
+        widget.id is int ? widget.id : int.parse(widget.id.toString()),
+      );
+
+      if (movieDetail != null) {
+        print('✅ Loaded from Backend! Title: ${movieDetail.title}');
+        
+        // Populate MovieDetails from Backend
+        MovieDetails.add({
+          "backdrop_path": movieDetail.poster.replaceAll('https://image.tmdb.org/t/p/w500', ''),
+          "poster_path": movieDetail.poster.replaceAll('https://image.tmdb.org/t/p/w500', ''),
+          "title": movieDetail.title,
+          "vote_average": movieDetail.rating,
+          "overview": movieDetail.overview,
+          "release_date": movieDetail.year.toString(),
+          "runtime": movieDetail.runtime,
+          "budget": movieDetail.budget,
+          "revenue": movieDetail.revenue,
+        });
+
+        // Populate genres
+        MoviesGeneres.addAll(movieDetail.genre);
+
+        // Note: For now, keep UserReviews and similar/recommended from TMDB
+        // as Backend doesn't store these yet
+        
+        // Load additional data from TMDB (reviews, similar, recommended)
+        await _loadAdditionalDataFromTMDB();
+        
+        return;
+      } else {
+        print('⚠️  Movie not found in Backend, falling back to TMDB...');
+      }
+    } catch (e) {
+      print('❌ Error loading from Backend: $e');
+      print('⚠️  Falling back to TMDB...');
+    }
+
+    // Fallback to original TMDB API
     var moviedetailurl =
         'https://api.themoviedb.org/3/movie/${widget.id}?api_key=$apikey';
-    var UserReviewurl =
-        'https://api.themoviedb.org/3/movie/${widget.id}/reviews?api_key=$apikey';
-    var similarmoviesurl =
+    
+    // Try Backend API first for similar/recommended, fallback to TMDB
+    var similarmoviesurl = '${ApiConfig.baseUrl}/api/similar';
+    var similarmoviesurl_tmdb =
         'https://api.themoviedb.org/3/movie/${widget.id}/similar?api_key=$apikey';
-    var recommendedmoviesurl =
+    var recommendedmoviesurl = '${ApiConfig.baseUrl}/api/recommended';
+    var recommendedmoviesurl_tmdb =
         'https://api.themoviedb.org/3/movie/${widget.id}/recommendations?api_key=$apikey';
-    var movietrailersurl =
-        'https://api.themoviedb.org/3/movie/${widget.id}/videos?api_key=$apikey';
+    
+    // Try Backend API first for videos, fallback to TMDB
+    var movietrailersurl = '${ApiConfig.baseUrl}/api/movies/tmdb/${widget.id}/videos';
 
     var moviedetailresponse = await http.get(Uri.parse(moviedetailurl));
     if (moviedetailresponse.statusCode == 200) {
@@ -328,75 +407,436 @@ Shared from Flick Movie App
       }
     } else {}
 
-    var UserReviewresponse = await http.get(Uri.parse(UserReviewurl));
-    if (UserReviewresponse.statusCode == 200) {
-      var UserReviewjson = jsonDecode(UserReviewresponse.body);
-      for (var i = 0; i < UserReviewjson['results'].length; i++) {
-        UserReviews.add({
-          "name": UserReviewjson['results'][i]['author'],
-          "review": UserReviewjson['results'][i]['content'],
-          "rating":
-              UserReviewjson['results'][i]['author_details']['rating'] == null
-              ? "Not Rated"
-              : UserReviewjson['results'][i]['author_details']['rating']
-                    .toString(),
-          "avatarphoto":
-              UserReviewjson['results'][i]['author_details']['avatar_path'] ==
-                  null
-              ? "https://www.pngitem.com/pimgs/m/146-1468479_my-profile-icon-blank-profile-picture-circle-hd.png"
-              : "https://image.tmdb.org/t/p/w500" +
-                    UserReviewjson['results'][i]['author_details']['avatar_path'],
-          "creationdate": UserReviewjson['results'][i]['created_at'].substring(
-            0,
-            10,
-          ),
-          "fullreviewurl": UserReviewjson['results'][i]['url'],
-        });
-      }
-    } else {}
-
-    var similarmoviesresponse = await http.get(Uri.parse(similarmoviesurl));
-    if (similarmoviesresponse.statusCode == 200) {
-      var similarmoviesjson = jsonDecode(similarmoviesresponse.body);
-      for (var i = 0; i < similarmoviesjson['results'].length; i++) {
-        similarmovieslist.add({
-          "poster_path": similarmoviesjson['results'][i]['poster_path'],
-          "name": similarmoviesjson['results'][i]['title'],
-          "vote_average": similarmoviesjson['results'][i]['vote_average'],
-          "date": similarmoviesjson['results'][i]['release_date'],
-          "id": similarmoviesjson['results'][i]['id'],
-        });
-      }
-    } else {}
-
-    var recommendedmoviesresponse = await http.get(
-      Uri.parse(recommendedmoviesurl),
-    );
-    if (recommendedmoviesresponse.statusCode == 200) {
-      var recommendedmoviesjson = jsonDecode(recommendedmoviesresponse.body);
-      for (var i = 0; i < recommendedmoviesjson['results'].length; i++) {
-        recommendedmovieslist.add({
-          "poster_path": recommendedmoviesjson['results'][i]['poster_path'],
-          "name": recommendedmoviesjson['results'][i]['title'],
-          "vote_average": recommendedmoviesjson['results'][i]['vote_average'],
-          "date": recommendedmoviesjson['results'][i]['release_date'],
-          "id": recommendedmoviesjson['results'][i]['id'],
-        });
-      }
-    } else {}
-
-    var movietrailersresponse = await http.get(Uri.parse(movietrailersurl));
-    if (movietrailersresponse.statusCode == 200) {
-      var movietrailersjson = jsonDecode(movietrailersresponse.body);
-      for (var i = 0; i < movietrailersjson['results'].length; i++) {
-        if (movietrailersjson['results'][i]['type'] == "Trailer") {
-          movietrailerslist.add({
-            "key": movietrailersjson['results'][i]['key'],
-          });
+    // Load Similar movies from Backend first, fallback to TMDB
+    try {
+      var similarmoviesresponse = await http.get(Uri.parse(similarmoviesurl));
+      if (similarmoviesresponse.statusCode == 200) {
+        var similarmoviesjson = jsonDecode(similarmoviesresponse.body);
+        
+        // Check if Backend API response (has 'success' field)
+        if (similarmoviesjson.containsKey('success') && similarmoviesjson['success'] == true) {
+          print('✅ Loading Similar movies from Backend...');
+          var results = similarmoviesjson['results'];
+          print('📽️ Found ${results.length} similar movies from Backend');
+          
+          for (var i = 0; i < results.length; i++) {
+            similarmovieslist.add({
+              "poster_path": results[i]['poster_path'],
+              "name": results[i]['title'],
+              "vote_average": results[i]['vote_average'],
+              "date": results[i]['release_date'],
+              "id": results[i]['id'],
+            });
+          }
+        } else {
+          // Unexpected response format, fallback to TMDB
+          print('⚠️  Unexpected Backend response, falling back to TMDB...');
+          throw Exception('Invalid Backend response');
         }
+      } else {
+        print('⚠️  Backend returned status ${similarmoviesresponse.statusCode}, falling back to TMDB...');
+        throw Exception('Backend not available');
       }
+    } catch (e) {
+      print('❌ Error loading Similar from Backend: $e');
+      print('⚠️  Falling back to TMDB for Similar movies...');
+      
+      // Fallback to TMDB
+      try {
+        var similarmoviesresponse_tmdb = await http.get(Uri.parse(similarmoviesurl_tmdb));
+        if (similarmoviesresponse_tmdb.statusCode == 200) {
+          var similarmoviesjson = jsonDecode(similarmoviesresponse_tmdb.body);
+          print('📽️ TMDB Fallback: Found ${similarmoviesjson['results'].length} similar movies');
+          
+          for (var i = 0; i < similarmoviesjson['results'].length; i++) {
+            similarmovieslist.add({
+              "poster_path": similarmoviesjson['results'][i]['poster_path'],
+              "name": similarmoviesjson['results'][i]['title'],
+              "vote_average": similarmoviesjson['results'][i]['vote_average'],
+              "date": similarmoviesjson['results'][i]['release_date'],
+              "id": similarmoviesjson['results'][i]['id'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback also failed: $tmdbError');
+      }
+    }
+
+    // Load Recommended movies from Backend first, fallback to TMDB
+    try {
+      var recommendedmoviesresponse = await http.get(Uri.parse(recommendedmoviesurl));
+      if (recommendedmoviesresponse.statusCode == 200) {
+        var recommendedmoviesjson = jsonDecode(recommendedmoviesresponse.body);
+        
+        // Check if Backend API response (has 'success' field)
+        if (recommendedmoviesjson.containsKey('success') && recommendedmoviesjson['success'] == true) {
+          print('✅ Loading Recommended movies from Backend...');
+          var results = recommendedmoviesjson['results'];
+          print('📽️ Found ${results.length} recommended movies from Backend');
+          
+          for (var i = 0; i < results.length; i++) {
+            recommendedmovieslist.add({
+              "poster_path": results[i]['poster_path'],
+              "name": results[i]['title'],
+              "vote_average": results[i]['vote_average'],
+              "date": results[i]['release_date'],
+              "id": results[i]['id'],
+            });
+          }
+        } else {
+          // Unexpected response format, fallback to TMDB
+          print('⚠️  Unexpected Backend response, falling back to TMDB...');
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        print('⚠️  Backend returned status ${recommendedmoviesresponse.statusCode}, falling back to TMDB...');
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('❌ Error loading Recommended from Backend: $e');
+      print('⚠️  Falling back to TMDB for Recommended movies...');
+      
+      // Fallback to TMDB
+      try {
+        var recommendedmoviesresponse_tmdb = await http.get(Uri.parse(recommendedmoviesurl_tmdb));
+        if (recommendedmoviesresponse_tmdb.statusCode == 200) {
+          var recommendedmoviesjson = jsonDecode(recommendedmoviesresponse_tmdb.body);
+          print('📽️ TMDB Fallback: Found ${recommendedmoviesjson['results'].length} recommended movies');
+          
+          for (var i = 0; i < recommendedmoviesjson['results'].length; i++) {
+            recommendedmovieslist.add({
+              "poster_path": recommendedmoviesjson['results'][i]['poster_path'],
+              "name": recommendedmoviesjson['results'][i]['title'],
+              "vote_average": recommendedmoviesjson['results'][i]['vote_average'],
+              "date": recommendedmoviesjson['results'][i]['release_date'],
+              "id": recommendedmoviesjson['results'][i]['id'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback also failed: $tmdbError');
+      }
+    }
+
+    // Try Backend API first for videos, fallback to TMDB
+    bool loadedFromBackend = false;
+    try {
+      var movietrailersresponse = await http.get(Uri.parse(movietrailersurl));
+      if (movietrailersresponse.statusCode == 200) {
+        var movietrailersjson = jsonDecode(movietrailersresponse.body);
+        
+        // Check if Backend API response (has 'success' field)
+        if (movietrailersjson.containsKey('success') && movietrailersjson['success'] == true) {
+          print('✅ Loading videos from Backend...');
+          var results = movietrailersjson['data']['results'];
+          print('📹 Found ${results.length} videos from Backend');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < results.length; i++) {
+            print('  - Type: ${results[i]['type']}, Name: ${results[i]['name']}');
+            if (results[i]['type'] == "Trailer" && results[i]['key'] != null) {
+              movietrailerslist.add({"key": results[i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types (Teaser, Clip, Featurette)
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < results.length; i++) {
+              if (_isAcceptableVideoType(results[i]['type']) && results[i]['key'] != null) {
+                movietrailerslist.add({"key": results[i]['key']});
+                break; // Only add first acceptable video
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        } else {
+          // TMDB response format
+          print('📹 Found ${movietrailersjson['results'].length} videos from TMDB');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < movietrailersjson['results'].length; i++) {
+            print('  - Type: ${movietrailersjson['results'][i]['type']}, Name: ${movietrailersjson['results'][i]['name']}');
+            if (movietrailersjson['results'][i]['type'] == "Trailer" && movietrailersjson['results'][i]['key'] != null) {
+              movietrailerslist.add({"key": movietrailersjson['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < movietrailersjson['results'].length; i++) {
+              if (_isAcceptableVideoType(movietrailersjson['results'][i]['type']) && 
+                  movietrailersjson['results'][i]['key'] != null) {
+                movietrailerslist.add({"key": movietrailersjson['results'][i]['key']});
+                break; // Only add first acceptable video
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        }
+      } else {
+        print('⚠️  Backend returned status ${movietrailersresponse.statusCode}, falling back to TMDB...');
+      }
+    } catch (e) {
+      print('❌ Error loading videos from Backend: $e');
+      print('⚠️  Falling back to TMDB for videos...');
+    }
+    
+    // If not loaded from Backend, fallback to TMDB
+    if (!loadedFromBackend) {
+      var tmdbVideosUrl = 'https://api.themoviedb.org/3/movie/${widget.id}/videos?api_key=$apikey';
+      try {
+        var tmdbResponse = await http.get(Uri.parse(tmdbVideosUrl));
+        if (tmdbResponse.statusCode == 200) {
+          var tmdbJson = jsonDecode(tmdbResponse.body);
+          print('📹 TMDB Fallback: Found ${tmdbJson['results'].length} videos');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < tmdbJson['results'].length; i++) {
+            print('  - Type: ${tmdbJson['results'][i]['type']}, Name: ${tmdbJson['results'][i]['name']}');
+            if (tmdbJson['results'][i]['type'] == "Trailer" && tmdbJson['results'][i]['key'] != null) {
+              movietrailerslist.add({"key": tmdbJson['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < tmdbJson['results'].length; i++) {
+              if (_isAcceptableVideoType(tmdbJson['results'][i]['type']) && 
+                  tmdbJson['results'][i]['key'] != null) {
+                movietrailerslist.add({"key": tmdbJson['results'][i]['key']});
+                break;
+              }
+            }
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback also failed: $tmdbError');
+      }
+    }
+    
+    // Only add demo trailer if absolutely no videos found
+    if (movietrailerslist.isEmpty) {
+      print('⚠️  No videos found, adding demo trailer');
       movietrailerslist.add({'key': 'aJ0cZTcTh90'});
-    } else {}
+    } else {
+      print('✅ Found ${movietrailerslist.length} video(s) to display');
+    }
+    print('Final movietrailerslist: ${movietrailerslist.map((v) => v['key']).toList()}');
+  }
+
+  // Load additional data from TMDB (similar, recommended, trailers)
+  Future<void> _loadAdditionalDataFromTMDB() async {
+    // Try Backend API first for similar/recommended, fallback to TMDB
+    var similarmoviesurl = '${ApiConfig.baseUrl}/api/similar';
+    var similarmoviesurl_tmdb =
+        'https://api.themoviedb.org/3/movie/${widget.id}/similar?api_key=$apikey';
+    var recommendedmoviesurl = '${ApiConfig.baseUrl}/api/recommended';
+    var recommendedmoviesurl_tmdb =
+        'https://api.themoviedb.org/3/movie/${widget.id}/recommendations?api_key=$apikey';
+    
+    // Try Backend API first for videos, fallback to TMDB
+    var movietrailersurl = '${ApiConfig.baseUrl}/api/movies/tmdb/${widget.id}/videos';
+
+    // Load Similar movies from Backend first, fallback to TMDB
+    try {
+      var similarmoviesresponse = await http.get(Uri.parse(similarmoviesurl));
+      if (similarmoviesresponse.statusCode == 200) {
+        var similarmoviesjson = jsonDecode(similarmoviesresponse.body);
+        
+        if (similarmoviesjson.containsKey('success') && similarmoviesjson['success'] == true) {
+          print('✅ [Additional] Loading Similar movies from Backend...');
+          var results = similarmoviesjson['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            similarmovieslist.add({
+              "poster_path": results[i]['poster_path'],
+              "name": results[i]['title'],
+              "vote_average": results[i]['vote_average'],
+              "date": results[i]['release_date'],
+              "id": results[i]['id'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  [Additional] Falling back to TMDB for Similar...');
+      try {
+        var similarmoviesresponse_tmdb = await http.get(Uri.parse(similarmoviesurl_tmdb));
+        if (similarmoviesresponse_tmdb.statusCode == 200) {
+          var similarmoviesjson = jsonDecode(similarmoviesresponse_tmdb.body);
+          for (var i = 0; i < similarmoviesjson['results'].length; i++) {
+            similarmovieslist.add({
+              "poster_path": similarmoviesjson['results'][i]['poster_path'],
+              "name": similarmoviesjson['results'][i]['title'],
+              "vote_average": similarmoviesjson['results'][i]['vote_average'],
+              "date": similarmoviesjson['results'][i]['release_date'],
+              "id": similarmoviesjson['results'][i]['id'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
+
+    // Load Recommended movies from Backend first, fallback to TMDB
+    try {
+      var recommendedmoviesresponse = await http.get(Uri.parse(recommendedmoviesurl));
+      if (recommendedmoviesresponse.statusCode == 200) {
+        var recommendedmoviesjson = jsonDecode(recommendedmoviesresponse.body);
+        
+        if (recommendedmoviesjson.containsKey('success') && recommendedmoviesjson['success'] == true) {
+          print('✅ [Additional] Loading Recommended movies from Backend...');
+          var results = recommendedmoviesjson['results'];
+          
+          for (var i = 0; i < results.length; i++) {
+            recommendedmovieslist.add({
+              "poster_path": results[i]['poster_path'],
+              "name": results[i]['title'],
+              "vote_average": results[i]['vote_average'],
+              "date": results[i]['release_date'],
+              "id": results[i]['id'],
+            });
+          }
+        } else {
+          throw Exception('Invalid Backend response');
+        }
+      } else {
+        throw Exception('Backend not available');
+      }
+    } catch (e) {
+      print('⚠️  [Additional] Falling back to TMDB for Recommended...');
+      try {
+        var recommendedmoviesresponse_tmdb = await http.get(Uri.parse(recommendedmoviesurl_tmdb));
+        if (recommendedmoviesresponse_tmdb.statusCode == 200) {
+          var recommendedmoviesjson = jsonDecode(recommendedmoviesresponse_tmdb.body);
+          for (var i = 0; i < recommendedmoviesjson['results'].length; i++) {
+            recommendedmovieslist.add({
+              "poster_path": recommendedmoviesjson['results'][i]['poster_path'],
+              "name": recommendedmoviesjson['results'][i]['title'],
+              "vote_average": recommendedmoviesjson['results'][i]['vote_average'],
+              "date": recommendedmoviesjson['results'][i]['release_date'],
+              "id": recommendedmoviesjson['results'][i]['id'],
+            });
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback failed: $tmdbError');
+      }
+    }
+
+    // Try Backend API first for videos, fallback to TMDB
+    bool loadedFromBackend = false;
+    try {
+      var movietrailersresponse = await http.get(Uri.parse(movietrailersurl));
+      if (movietrailersresponse.statusCode == 200) {
+        var movietrailersjson = jsonDecode(movietrailersresponse.body);
+        
+        // Check if Backend API response (has 'success' field)
+        if (movietrailersjson.containsKey('success') && movietrailersjson['success'] == true) {
+          print('✅ [TMDB Additional] Loading videos from Backend...');
+          var results = movietrailersjson['data']['results'];
+          print('📹 Found ${results.length} videos from Backend');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < results.length; i++) {
+            print('  - Type: ${results[i]['type']}, Name: ${results[i]['name']}');
+            if (results[i]['type'] == "Trailer" && results[i]['key'] != null) {
+              movietrailerslist.add({"key": results[i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < results.length; i++) {
+              if (_isAcceptableVideoType(results[i]['type']) && results[i]['key'] != null) {
+                movietrailerslist.add({"key": results[i]['key']});
+                break;
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        } else {
+          // TMDB response format
+          print('📹 [TMDB Additional] Found ${movietrailersjson['results'].length} videos from TMDB');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < movietrailersjson['results'].length; i++) {
+            print('  - Type: ${movietrailersjson['results'][i]['type']}, Name: ${movietrailersjson['results'][i]['name']}');
+            if (movietrailersjson['results'][i]['type'] == "Trailer" && movietrailersjson['results'][i]['key'] != null) {
+              movietrailerslist.add({"key": movietrailersjson['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < movietrailersjson['results'].length; i++) {
+              if (_isAcceptableVideoType(movietrailersjson['results'][i]['type']) && 
+                  movietrailersjson['results'][i]['key'] != null) {
+                movietrailerslist.add({"key": movietrailersjson['results'][i]['key']});
+                break;
+              }
+            }
+          }
+          
+          loadedFromBackend = true;
+        }
+      } else {
+        print('⚠️  [TMDB Additional] Backend returned status ${movietrailersresponse.statusCode}, falling back to TMDB...');
+      }
+    } catch (e) {
+      print('❌ Error loading videos from Backend: $e');
+      print('⚠️  Falling back to TMDB for videos...');
+    }
+    
+    // If not loaded from Backend, fallback to TMDB
+    if (!loadedFromBackend) {
+      var tmdbVideosUrl = 'https://api.themoviedb.org/3/movie/${widget.id}/videos?api_key=$apikey';
+      try {
+        var tmdbResponse = await http.get(Uri.parse(tmdbVideosUrl));
+        if (tmdbResponse.statusCode == 200) {
+          var tmdbJson = jsonDecode(tmdbResponse.body);
+          print('📹 TMDB Fallback: Found ${tmdbJson['results'].length} videos');
+          
+          // First try to find a Trailer
+          for (var i = 0; i < tmdbJson['results'].length; i++) {
+            print('  - Type: ${tmdbJson['results'][i]['type']}, Name: ${tmdbJson['results'][i]['name']}');
+            if (tmdbJson['results'][i]['type'] == "Trailer" && tmdbJson['results'][i]['key'] != null) {
+              movietrailerslist.add({"key": tmdbJson['results'][i]['key']});
+            }
+          }
+          
+          // If no trailers found, accept other video types
+          if (movietrailerslist.isEmpty) {
+            for (var i = 0; i < tmdbJson['results'].length; i++) {
+              if (_isAcceptableVideoType(tmdbJson['results'][i]['type']) && 
+                  tmdbJson['results'][i]['key'] != null) {
+                movietrailerslist.add({"key": tmdbJson['results'][i]['key']});
+                break;
+              }
+            }
+          }
+        }
+      } catch (tmdbError) {
+        print('❌ TMDB fallback also failed: $tmdbError');
+      }
+    }
+    
+    // Only add demo trailer if absolutely no videos found
+    if (movietrailerslist.isEmpty) {
+      print('⚠️  No videos found, adding demo trailer');
+      movietrailerslist.add({'key': 'aJ0cZTcTh90'});
+    } else {
+      print('✅ Found ${movietrailerslist.length} video(s) to display');
+    }
     print(movietrailerslist);
   }
 
@@ -534,9 +974,20 @@ Shared from Flick Movie App
                     collapseMode: CollapseMode.parallax,
                     background: FittedBox(
                       fit: BoxFit.fill,
-                      child: trailerwatch(
-                        trailerytid: movietrailerslist[0]['key'],
-                      ),
+                      child: movietrailerslist.isNotEmpty
+                        ? trailerwatch(
+                            trailerytid: movietrailerslist[0]['key'],
+                          )
+                        : Container(
+                            color: Colors.black,
+                            child: const Center(
+                              child: Icon(
+                                Icons.movie,
+                                size: 100,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
                     ),
                   ),
                 ),
@@ -742,41 +1193,57 @@ Shared from Flick Movie App
                       ),
                     ),
 
-                    // User Reviews
-                    if (UserReviews.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 4,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [Colors.cyan, Colors.teal],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                                borderRadius: BorderRadius.circular(2),
+                    // Chat Room Section
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 4,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Colors.cyan, Colors.teal],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ),
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'User Reviews',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Discussion',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF001E3C),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.cyan.withValues(alpha: 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: DiscussionTabs(
+                            mediaId: widget.id is int ? widget.id : int.parse(widget.id.toString()),
+                            mediaType: 'movie',
+                          ),
                         ),
                       ),
-                    if (UserReviews.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 20, top: 10),
-                        child: UserReview(reviewDetails: UserReviews),
-                      ),
+                    ),
+
                     sliderlist(
                       similarmovieslist,
                       "Similar Movies",

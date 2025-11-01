@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/recently_viewed_service.dart';
-import '../models/movie.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/backend_recently_viewed_service.dart';
+import '../models/recently_viewed.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 
@@ -12,7 +13,8 @@ class RecentlyViewedAllPage extends StatefulWidget {
 }
 
 class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
-  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+  bool _isLoading = false;
 
   Future<void> _confirmClearAll() async {
     final confirmed = await showDialog<bool>(
@@ -55,22 +57,33 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
     );
 
     if (confirmed == true) {
-      final success = await _recentlyViewedService.clearAllRecentlyViewed();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? 'Recently viewed cleared successfully'
-                  : 'Failed to clear recently viewed',
-            ),
-            backgroundColor: success ? Colors.green[700] : Colors.red[700],
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        if (success) {
-          Navigator.pop(context);
+      setState(() => _isLoading = true);
+      try {
+        if (currentUser != null) {
+          await BackendRecentlyViewedService.clearRecentlyViewed(currentUser!.uid);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Recently viewed cleared successfully'),
+                backgroundColor: Colors.green[700],
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            Navigator.pop(context);
+          }
         }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to clear recently viewed: $e'),
+              backgroundColor: Colors.red[700],
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -111,8 +124,10 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
             ],
           ),
         ),
-        child: StreamBuilder<List<Movie>>(
-          stream: _recentlyViewedService.getRecentlyViewedStream(),
+        child: FutureBuilder<List<RecentlyViewed>>(
+          future: currentUser != null 
+            ? BackendRecentlyViewedService.getRecentlyViewed(currentUser!.uid)
+            : Future.value([]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
@@ -136,9 +151,9 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
               );
             }
 
-            final movies = snapshot.data ?? [];
+            final items = snapshot.data ?? [];
 
-            if (movies.isEmpty) {
+            if (items.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -178,10 +193,10 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 16,
               ),
-              itemCount: movies.length,
+              itemCount: items.length,
               itemBuilder: (context, index) {
-                final movie = movies[index];
-                return _buildMovieCard(movie);
+                final item = items[index];
+                return _buildMovieCard(item);
               },
             );
           },
@@ -190,10 +205,11 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
     );
   }
 
-  Widget _buildMovieCard(Movie movie) {
+  Widget _buildMovieCard(RecentlyViewed item) {
     // Ensure posterPath starts with /
-    final posterUrl = movie.posterPath.isNotEmpty
-        ? 'https://image.tmdb.org/t/p/w500${movie.posterPath.startsWith('/') ? movie.posterPath : '/${movie.posterPath}'}'
+    final posterPath = item.posterPath ?? '';
+    final posterUrl = posterPath.isNotEmpty
+        ? 'https://image.tmdb.org/t/p/w500${posterPath.startsWith('/') ? posterPath : '/$posterPath'}'
         : '';
 
     return GestureDetector(
@@ -201,9 +217,9 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => movie.mediaType == 'tv'
-                ? TvSeriesDetail(id: movie.id)
-                : MoviesDetail(id: movie.id),
+            builder: (context) => item.mediaType == 'tv'
+                ? TvSeriesDetail(id: item.mediaId)
+                : MoviesDetail(id: item.mediaId),
           ),
         );
       },
@@ -245,7 +261,7 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
                               );
                             },
                             errorBuilder: (context, error, stackTrace) {
-                              print('Error loading image: ${movie.posterPath}');
+                              print('Error loading image: $posterPath');
                               print('Error: $error');
                               return Container(
                                 color: Colors.grey[800],
@@ -288,13 +304,13 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: movie.mediaType == 'tv'
+                      color: item.mediaType == 'tv'
                           ? Colors.purple[700]
                           : Colors.blue[700],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      movie.mediaType == 'tv' ? 'TV' : 'MOVIE',
+                      item.mediaType == 'tv' ? 'TV' : 'MOVIE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -309,7 +325,7 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
           const SizedBox(height: 8),
           // Movie Title
           Text(
-            movie.title,
+            item.title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -329,7 +345,7 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                movie.voteAverage.toStringAsFixed(1),
+                item.rating.toStringAsFixed(1),
                 style: TextStyle(
                   color: Colors.grey[400],
                   fontSize: 12,

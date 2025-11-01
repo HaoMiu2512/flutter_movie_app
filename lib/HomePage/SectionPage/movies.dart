@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_movie_app/reapeatedfunction/slider.dart';
-import 'package:flutter_movie_app/apikey/apikey.dart';
+import 'package:flutter_movie_app/services/unified_movie_service.dart';
+import 'package:flutter_movie_app/models/movie.dart';
 
+/// Movies Section - Migrated to Backend API ✅
+/// Uses UnifiedMovieService for automatic fallback
 class Movies extends StatefulWidget {
   const Movies({super.key});
 
@@ -12,117 +13,122 @@ class Movies extends StatefulWidget {
 }
 
 class _MoviesState extends State<Movies> {
+  final UnifiedMovieService _movieService = UnifiedMovieService();
+  
   List<Map<String, dynamic>> popularmovies = [];
   List<Map<String, dynamic>> nowplayingmovies = [];
-
   List<Map<String, dynamic>> topratedmovies = [];
-  List<Map<String, dynamic>> latestmovies = [];
+  bool _isLoading = false;
+  bool _isLoaded = false;
 
-  final String popularmoviesurl =
-      'https://api.themoviedb.org/3/movie/popular?api_key=$apikey';
-  final String nowplayingmoviesurl =
-      'https://api.themoviedb.org/3/movie/now_playing?api_key=$apikey';
-  final String topratedmoviesurl =
-      'https://api.themoviedb.org/3/movie/top_rated?api_key=$apikey';
+  // Convert Movie object to Map for compatibility with sliderlist
+  Map<String, dynamic> _movieToMap(Movie movie) {
+    return {
+      "name": movie.title,
+      "poster_path": movie.posterPath.startsWith('http')
+          ? movie.posterPath
+          : movie.posterPath, // Already has full URL from backend
+      "vote_average": movie.voteAverage,
+      "date": movie.releaseDate,
+      "id": movie.id,
+    };
+  }
 
   Future<void> moviesfunction() async {
-    var popularmoviesresponse = await http.get(Uri.parse(popularmoviesurl));
-    if (popularmoviesresponse.statusCode == 200) {
-      var tempdata = jsonDecode(popularmoviesresponse.body);
-      var popularmoviesjson = tempdata['results'];
-      for (var i = 0; i < popularmoviesjson.length; i++) {
-        popularmovies.add({
-          "name": popularmoviesjson[i]["title"],
-          "poster_path": popularmoviesjson[i]["poster_path"],
-          "vote_average": popularmoviesjson[i]["vote_average"],
-          "date": popularmoviesjson[i]["release_date"],
-          "id": popularmoviesjson[i]["id"],
-        });
-      }
-    } else {
-      print(popularmoviesresponse.statusCode);
-    }
+    if (_isLoading || _isLoaded) return; // Prevent multiple calls
+    
+    setState(() {
+      _isLoading = true;
+    });
 
-    var nowplayingmoviesresponse =
-        await http.get(Uri.parse(nowplayingmoviesurl));
-    if (nowplayingmoviesresponse.statusCode == 200) {
-      var tempdata = jsonDecode(nowplayingmoviesresponse.body);
-      var nowplayingmoviesjson = tempdata['results'];
-      for (var i = 0; i < nowplayingmoviesjson.length; i++) {
-        nowplayingmovies.add({
-          "name": nowplayingmoviesjson[i]["title"],
-          "poster_path": nowplayingmoviesjson[i]["poster_path"],
-          "vote_average": nowplayingmoviesjson[i]["vote_average"],
-          "date": nowplayingmoviesjson[i]["release_date"],
-          "id": nowplayingmoviesjson[i]["id"],
-        });
-      }
-    } else {
-      print(nowplayingmoviesresponse.statusCode);
-    }
+    // Clear lists before loading to prevent duplicates
+    popularmovies.clear();
+    nowplayingmovies.clear();
+    topratedmovies.clear();
 
-    var topratedmoviesresponse = await http.get(Uri.parse(topratedmoviesurl));
-    if (topratedmoviesresponse.statusCode == 200) {
-      var tempdata = jsonDecode(topratedmoviesresponse.body);
-      var topratedmoviesjson = tempdata['results'];
-      for (var i = 0; i < topratedmoviesjson.length; i++) {
-        topratedmovies.add({
-          "name": topratedmoviesjson[i]["title"],
-          "poster_path": topratedmoviesjson[i]["poster_path"],
-          "vote_average": topratedmoviesjson[i]["vote_average"],
-          "date": topratedmoviesjson[i]["release_date"],
-          "id": topratedmoviesjson[i]["id"],
+    try {
+      // Fetch all categories from Backend API (with automatic TMDB fallback)
+      final results = await Future.wait([
+        _movieService.getPopularMovies(limit: 10),
+        _movieService.getNowPlayingMovies(limit: 10),
+        _movieService.getTopRatedMovies(limit: 10),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          popularmovies = results[0].map((movie) => _movieToMap(movie)).toList();
+          nowplayingmovies = results[1].map((movie) => _movieToMap(movie)).toList();
+          topratedmovies = results[2].map((movie) => _movieToMap(movie)).toList();
+          _isLoading = false;
+          _isLoaded = true;
+        });
+
+        print('Movies Section: ✅ Loaded ${popularmovies.length} popular, '
+            '${nowplayingmovies.length} now playing, '
+            '${topratedmovies.length} top rated movies from Backend');
+      }
+    } catch (e) {
+      print('Movies Section Error: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
         });
       }
-    } else {
-      print(topratedmoviesresponse.statusCode);
     }
   }
 
   @override
   void initState() {
     super.initState();
-    // moviesfunction();
+    moviesfunction(); // Load once on init
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: moviesfunction(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-                child: CircularProgressIndicator(color: Colors.cyan.shade400));
-          } else {
-            return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  sliderlist(
-                    popularmovies,
-                    "Popular Now",
-                    "movie",
-                    20,
-                    apiEndpoint: popularmoviesurl,
-                    context: context,
-                  ),
-                  sliderlist(
-                    nowplayingmovies,
-                    "Now Playing",
-                    "movie",
-                    20,
-                    apiEndpoint: nowplayingmoviesurl,
-                    context: context,
-                  ),
-                  sliderlist(
-                    topratedmovies,
-                    "Top Rated",
-                    "movie",
-                    20,
-                    apiEndpoint: topratedmoviesurl,
-                    context: context,
-                  )
-                ]);
-          }
-        });
+    if (_isLoading) {
+      return Center(
+          child: CircularProgressIndicator(color: Colors.cyan.shade400));
+    }
+
+    if (!_isLoaded || popularmovies.isEmpty) {
+      return const Center(
+        child: Text(
+          'No movies available',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          sliderlist(
+            popularmovies,
+            "Popular Now",
+            "movie",
+            popularmovies.length,
+            apiEndpoint: '/api/movies/popular', // Backend endpoint for popular
+            context: context,
+            useBackendApi: true, // Use Backend API
+          ),
+          sliderlist(
+            nowplayingmovies,
+            "Now Playing",
+            "movie",
+            nowplayingmovies.length,
+            apiEndpoint: '/api/movies/now-playing', // Backend endpoint for now playing
+            context: context,
+            useBackendApi: true, // Use Backend API
+          ),
+          sliderlist(
+            topratedmovies,
+            "Top Rated",
+            "movie",
+            topratedmovies.length,
+            apiEndpoint: '/api/movies/top-rated', // Backend endpoint
+            context: context,
+            useBackendApi: true, // Use Backend API
+          )
+        ]);
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_movie_app/reapeatedfunction/searchbarfunction.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:flutter_movie_app/apikey/apikey.dart';
+import 'package:flutter_movie_app/config/api_config.dart';
 import 'package:flutter_movie_app/HomePage/SectionPage/movies.dart';
 import 'package:flutter_movie_app/HomePage/SectionPage/tvseries.dart';
 import 'package:flutter_movie_app/HomePage/SectionPage/upcoming.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_movie_app/pages/favorites_page.dart';
 import 'package:flutter_movie_app/pages/profile_page.dart';
 import 'package:flutter_movie_app/pages/settings_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_movie_app/utils/page_transitions.dart';
 
 class HomePage extends StatefulWidget {
   final String? username;
@@ -29,6 +31,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   int uval = 1;
 
   Future<void> trendinglist(int checkerno) async {
+    // Try Backend API first
+    try {
+      var trendingUrl = '${ApiConfig.baseUrl}/api/trending';
+      var response = await http.get(Uri.parse(trendingUrl));
+      
+      if (response.statusCode == 200) {
+        var json = jsonDecode(response.body);
+        
+        // Check if Backend API response
+        if (json.containsKey('success') && json['success'] == true) {
+          print('✅ Loading trending from Backend...');
+          trendingweek.clear();
+          var results = json['results'];
+          for (var i = 0; i < results.length; i++) {
+            trendingweek.add({
+              'id': results[i]['id'],
+              'poster_path': results[i]['poster_path'],
+              'vote_average': results[i]['vote_average'],
+              'media_type': results[i]['media_type'],
+              'indexno': i,
+            });
+          }
+          return; // Success - exit early
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading trending from Backend: $e');
+      print('⚠️  Falling back to TMDB...');
+    }
+
+    // Fallback to TMDB API
     if (checkerno == 1) {
       var trendingweekurl =
           'https://api.themoviedb.org/3/trending/all/week?api_key=$apikey';
@@ -36,6 +69,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (trendingweekresponse.statusCode == 200) {
         var tempdata = jsonDecode(trendingweekresponse.body);
         var trendingweekjson = tempdata['results'];
+        trendingweek.clear();
         for (var i = 0; i < trendingweekjson.length; i++) {
           trendingweek.add({
             'id': trendingweekjson[i]['id'],
@@ -53,6 +87,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       if (trendingweekresponse.statusCode == 200) {
         var tempdata = jsonDecode(trendingweekresponse.body);
         var trendingweekjson = tempdata['results'];
+        trendingweek.clear();
         for (var i = 0; i < trendingweekjson.length; i++) {
           trendingweek.add({
             'id': trendingweekjson[i]['id'],
@@ -214,12 +249,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FavoritesPage(),
-                ),
-              );
+              context.fadeToPage(const FavoritesPage());
             },
           ),
 
@@ -247,12 +277,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfilePage(),
-                ),
-              );
+              context.fadeToPage(const ProfilePage());
             },
           ),
 
@@ -280,12 +305,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
-                ),
-              );
+              context.fadeToPage(const SettingsPage());
             },
           ),
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_movie_app/apikey/apikey.dart';
+import 'package:flutter_movie_app/config/api_config.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_movie_app/details/checker.dart';
 
@@ -14,38 +14,103 @@ class Searchbarfunction extends StatefulWidget {
 
 class _SearchbarfunctionState extends State<Searchbarfunction> {
   List<Map<String, dynamic>> searchresult = [];
+  bool isSearching = false;
+  String lastSearchQuery = '';
 
   Future<void> searchlistfunction(val) async {
-    var searchurl =
-        'https://api.themoviedb.org/3/search/multi?api_key=$apikey&query=$val';
-    var searchresponse = await http.get(Uri.parse(searchurl));
-    if (searchresponse.statusCode == 200) {
-      var tempdata = jsonDecode(searchresponse.body);
-      var searchjson = tempdata['results'];
-      for (var i = 0; i < searchjson.length; i++) {
-        //only add value if all are present
-        if (searchjson[i]['id'] != null &&
-            searchjson[i]['poster_path'] != null &&
-            searchjson[i]['vote_average'] != null &&
-            searchjson[i]['media_type'] != null) {
-          searchresult.add({
-            'id': searchjson[i]['id'],
-            'poster_path': searchjson[i]['poster_path'],
-            'vote_average': searchjson[i]['vote_average'],
-            'media_type': searchjson[i]['media_type'],
-            'popularity': searchjson[i]['popularity'],
-            'overview': searchjson[i]['overview'],
-            'title': searchjson[i]['title'] ?? searchjson[i]['name'] ?? 'Unknown',
-            'release_date': searchjson[i]['release_date'] ?? searchjson[i]['first_air_date'] ?? '',
-          });
+    // Prevent duplicate searches
+    if (isSearching || val == lastSearchQuery) {
+      return;
+    }
 
-          if (searchresult.length > 20) {
-            searchresult.removeRange(20, searchresult.length);
+    setState(() {
+      isSearching = true;
+      searchresult.clear();
+    });
+
+    lastSearchQuery = val;
+
+    // Only search from Backend API (no TMDB fallback)
+    try {
+      var searchUrl = '${ApiConfig.baseUrl}/api/search?q=${Uri.encodeComponent(val)}';
+      var response = await http.get(Uri.parse(searchUrl));
+      
+      if (response.statusCode == 200) {
+        var json = jsonDecode(response.body);
+        
+        // Check if Backend API response
+        if (json.containsKey('success') && json['success'] == true) {
+          print('✅ Loading search results from Backend...');
+          var results = json['results'];
+          
+          if (results.isEmpty) {
+            print('ℹ️  No results found in Backend database');
+            setState(() {
+              searchresult.clear();
+              isSearching = false;
+            });
+            Fluttertoast.showToast(
+              msg: "No results found in database",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.grey[800],
+              textColor: Colors.white,
+            );
+            return;
           }
+          
+          List<Map<String, dynamic>> tempResults = [];
+          for (var i = 0; i < results.length; i++) {
+            // Only add if all required fields are present
+            if (results[i]['id'] != null &&
+                results[i]['poster_path'] != null &&
+                results[i]['vote_average'] != null &&
+                results[i]['media_type'] != null) {
+              tempResults.add({
+                'id': results[i]['id'],
+                'poster_path': results[i]['poster_path'],
+                'vote_average': results[i]['vote_average'],
+                'media_type': results[i]['media_type'],
+                'popularity': results[i]['popularity'],
+                'overview': results[i]['overview'],
+                'title': results[i]['title'] ?? results[i]['name'] ?? 'Unknown',
+                'release_date': results[i]['release_date'] ?? results[i]['first_air_date'] ?? '',
+              });
+
+              if (tempResults.length >= 20) {
+                break;
+              }
+            }
+          }
+          
+          print('✅ Found ${tempResults.length} results from Backend');
+          setState(() {
+            searchresult = tempResults;
+            isSearching = false;
+          });
         } else {
-          print('null value found');
+          setState(() {
+            isSearching = false;
+          });
         }
+      } else {
+        setState(() {
+          isSearching = false;
+        });
       }
+    } catch (e) {
+      print('❌ Error searching from Backend: $e');
+      setState(() {
+        searchresult.clear();
+        isSearching = false;
+      });
+      Fluttertoast.showToast(
+        msg: "Error connecting to server",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red[800],
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -84,18 +149,23 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
                 autofocus: false,
                 controller: searchtext,
                 onSubmitted: (value) {
-                  searchresult.clear();
-                  setState(() {
-                    val1 = value;
-                    FocusManager.instance.primaryFocus?.unfocus();
-                  });
+                  lastSearchQuery = ''; // Reset cache
+                  val1 = value;
+                  if (value.isNotEmpty) {
+                    searchlistfunction(value);
+                  }
+                  FocusManager.instance.primaryFocus?.unfocus();
                 },
                 onChanged: (value) {
-                  searchresult.clear();
-
-                  setState(() {
-                    val1 = value;
-                  });
+                  lastSearchQuery = ''; // Reset cache to allow new search
+                  val1 = value;
+                  if (value.isNotEmpty) {
+                    searchlistfunction(value);
+                  } else {
+                    setState(() {
+                      searchresult.clear();
+                    });
+                  }
                 },
                 decoration: InputDecoration(
                   suffixIcon: IconButton(
@@ -136,30 +206,40 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
             //
             SizedBox(height: 5),
 
+            // Display search results or loading indicator
             searchtext.text.isNotEmpty
-                ? FutureBuilder(
-                    future: searchlistfunction(val1),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        return SizedBox(
-                          height: 400,
-                          child: ListView.builder(
-                            itemCount: searchresult.length,
-                            scrollDirection: Axis.vertical,
-                            physics: BouncingScrollPhysics(),
-                            itemBuilder: (context, index) {
-                              final result = searchresult[index];
-                              return _buildSearchResultCard(context, result);
-                            },
-                          ),
-                        );
-                      } else {
-                        return Center(
+                ? isSearching
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
                           child: CircularProgressIndicator(color: Colors.cyan),
-                        );
-                      }
-                    },
-                  )
+                        ),
+                      )
+                    : searchresult.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Text(
+                                'No results found',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.6),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          )
+                        : SizedBox(
+                            height: 400,
+                            child: ListView.builder(
+                              itemCount: searchresult.length,
+                              scrollDirection: Axis.vertical,
+                              physics: BouncingScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final result = searchresult[index];
+                                return _buildSearchResultCard(context, result);
+                              },
+                            ),
+                          )
                 : Container(),
           ],
         ),

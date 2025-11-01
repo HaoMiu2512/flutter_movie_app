@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/auth_service.dart';
-import '../services/recently_viewed_service.dart';
-import '../models/movie.dart';
+import '../services/backend_user_service.dart';
+import '../services/backend_recently_viewed_service.dart';
+import '../services/backend_upload_service.dart';
+import '../models/recently_viewed.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 import 'change_password_page.dart';
@@ -24,9 +23,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
-  final RecentlyViewedService _recentlyViewedService = RecentlyViewedService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
   final TextEditingController _displayNameController = TextEditingController();
@@ -70,7 +66,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      // Update display name
+      // Update display name in Firebase Auth
       await currentUser?.updateDisplayName(_displayNameController.text.trim());
 
       // Reload to get fresh data
@@ -79,13 +75,12 @@ class _ProfilePageState extends State<ProfilePage> {
       // Force refresh the auth state
       await FirebaseAuth.instance.currentUser?.reload();
 
-      // Update in Firestore
+      // Update in Backend
       if (currentUser != null) {
-        await _firestore.collection('users').doc(currentUser!.uid).set({
+        await BackendUserService.updateUserProfile(currentUser!.uid, {
           'displayName': _displayNameController.text.trim(),
           'email': userEmail,
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        }, SetOptions(merge: true));
+        });
       }
 
       // Refresh UI
@@ -124,11 +119,10 @@ class _ProfilePageState extends State<ProfilePage> {
       await currentUser?.updatePhotoURL(url);
       await currentUser?.reload();
 
-      // Update Firestore
-      await _firestore.collection('users').doc(currentUser!.uid).set({
+      // Update Backend
+      await BackendUserService.updateUserProfile(currentUser!.uid, {
         'photoURL': url,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      }, SetOptions(merge: true));
+      });
 
       _showSnackBar('Avatar updated successfully!', Colors.green);
     } catch (e) {
@@ -152,31 +146,27 @@ class _ProfilePageState extends State<ProfilePage> {
 
       setState(() => _isUploadingAvatar = true);
 
-      String downloadURL;
+      // Upload to backend
+      final File file = File(image.path);
+      final result = await BackendUploadService.uploadAvatar(
+        imageFile: file,
+        userId: currentUser!.uid,
+      );
 
-      if (kIsWeb) {
-        // For Web
-        final bytes = await image.readAsBytes();
-        final ref = _storage.ref().child('avatars/${currentUser!.uid}.jpg');
-        await ref.putData(bytes);
-        downloadURL = await ref.getDownloadURL();
-      } else {
-        // For Mobile
-        final File file = File(image.path);
-        final ref = _storage.ref().child('avatars/${currentUser!.uid}.jpg');
-        await ref.putFile(file);
-        downloadURL = await ref.getDownloadURL();
+      final downloadURL = result?['url'];
+      
+      if (downloadURL == null) {
+        throw Exception('Failed to get upload URL');
       }
 
       // Update Firebase Auth profile
       await currentUser?.updatePhotoURL(downloadURL);
       await currentUser?.reload();
 
-      // Update Firestore
-      await _firestore.collection('users').doc(currentUser!.uid).set({
+      // Update Backend user profile
+      await BackendUserService.updateUserProfile(currentUser!.uid, {
         'photoURL': downloadURL,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      }, SetOptions(merge: true));
+      });
 
       setState(() {});
 
@@ -652,8 +642,10 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
             const SizedBox(height: 16),
-            StreamBuilder<List<Movie>>(
-              stream: _recentlyViewedService.getRecentlyViewedStream(),
+            FutureBuilder<List<RecentlyViewed>>(
+              future: currentUser != null 
+                ? BackendRecentlyViewedService.getRecentlyViewed(currentUser!.uid)
+                : Future.value([]),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -676,9 +668,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   );
                 }
 
-                final movies = snapshot.data ?? [];
+                final items = snapshot.data ?? [];
 
-                if (movies.isEmpty) {
+                if (items.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(30),
                     decoration: BoxDecoration(
@@ -717,10 +709,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   height: 245,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: movies.length > 10 ? 10 : movies.length,
+                    itemCount: items.length > 10 ? 10 : items.length,
                     itemBuilder: (context, index) {
-                      final movie = movies[index];
-                      return _buildRecentlyViewedItem(movie);
+                      final item = items[index];
+                      return _buildRecentlyViewedItem(item);
                     },
                   ),
                 );
@@ -732,10 +724,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildRecentlyViewedItem(Movie movie) {
+  Widget _buildRecentlyViewedItem(RecentlyViewed item) {
     // Ensure posterPath starts with /
-    final posterUrl = movie.posterPath.isNotEmpty
-        ? 'https://image.tmdb.org/t/p/w500${movie.posterPath.startsWith('/') ? movie.posterPath : '/${movie.posterPath}'}'
+    final posterPath = item.posterPath ?? '';
+    final posterUrl = posterPath.isNotEmpty
+        ? 'https://image.tmdb.org/t/p/w500${posterPath.startsWith('/') ? posterPath : '/$posterPath'}'
         : '';
 
     return GestureDetector(
@@ -743,9 +736,9 @@ class _ProfilePageState extends State<ProfilePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => movie.mediaType == 'tv'
-                ? TvSeriesDetail(id: movie.id)
-                : MoviesDetail(id: movie.id),
+            builder: (context) => item.mediaType == 'tv'
+                ? TvSeriesDetail(id: item.mediaId)
+                : MoviesDetail(id: item.mediaId),
           ),
         );
       },
@@ -802,13 +795,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: movie.mediaType == 'tv'
+                      color: item.mediaType == 'tv'
                           ? Colors.purple[700]
                           : Colors.blue[700],
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      movie.mediaType == 'tv' ? 'TV' : 'MOVIE',
+                      item.mediaType == 'tv' ? 'TV' : 'MOVIE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -822,7 +815,7 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 8),
             // Movie Title
             Text(
-              movie.title,
+              item.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -842,7 +835,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  movie.voteAverage.toStringAsFixed(1),
+                  item.rating.toStringAsFixed(1),
                   style: TextStyle(
                     color: Colors.grey[400],
                     fontSize: 12,
@@ -909,16 +902,26 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (confirmed == true) {
       setState(() => _isLoading = true);
-      final success = await _recentlyViewedService.clearAllRecentlyViewed();
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        _showSnackBar(
-          success
-              ? 'Recently viewed cleared successfully'
-              : 'Failed to clear recently viewed',
-          success ? Colors.green[700]! : Colors.red[700]!,
-        );
+      try {
+        if (currentUser != null) {
+          await BackendRecentlyViewedService.clearRecentlyViewed(currentUser!.uid);
+          if (mounted) {
+            _showSnackBar(
+              'Recently viewed cleared successfully',
+              Colors.green[700]!,
+            );
+            setState(() {}); // Refresh UI
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar(
+            'Failed to clear recently viewed: $e',
+            Colors.red[700]!,
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
       }
     }
   }

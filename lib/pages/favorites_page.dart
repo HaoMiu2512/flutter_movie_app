@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/movie.dart';
-import '../services/favorites_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/favorite.dart';
+import '../services/backend_favorites_service.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 
@@ -12,9 +13,10 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  final FavoritesService _favoritesService = FavoritesService();
-  List<Movie> _favorites = [];
+  List<Favorite> _favorites = [];
   bool _isLoading = true;
+  
+  User? get currentUser => FirebaseAuth.instance.currentUser;
 
   @override
   void initState() {
@@ -23,40 +25,51 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Future<void> _loadFavorites() async {
+    if (currentUser == null) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final favorites = await _favoritesService.getFavorites();
+      final favorites = await BackendFavoritesService.getUserFavorites(currentUser!.uid);
       setState(() {
         _favorites = favorites;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error loading favorites: $e');
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _removeFromFavorites(Movie movie) async {
-    final success = await _favoritesService.removeFromFavorites(
-      movie.id,
-      movie.mediaType,
+  Future<void> _removeFromFavorites(Favorite favorite) async {
+    if (currentUser == null) return;
+
+    final success = await BackendFavoritesService.removeFavoriteByMedia(
+      userId: currentUser!.uid,
+      mediaType: favorite.mediaType,
+      mediaId: favorite.mediaId,
     );
 
     if (success) {
       setState(() {
         _favorites.removeWhere(
-          (m) => m.id == movie.id && m.mediaType == movie.mediaType,
+          (f) => f.mediaId == favorite.mediaId && f.mediaType == favorite.mediaType,
         );
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${movie.title} removed from favorites'),
+            content: Text('${favorite.title} removed from favorites'),
             backgroundColor: Colors.orange[700],
             duration: const Duration(seconds: 2),
           ),
@@ -65,13 +78,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
   }
 
-  void _navigateToDetail(Movie movie) {
-    if (movie.mediaType == 'movie') {
+  void _navigateToDetail(Favorite favorite) {
+    if (favorite.mediaType == 'movie') {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => MoviesDetail(
-            id: movie.id.toString(),
+            id: favorite.mediaId.toString(),
           ),
         ),
       ).then((_) => _loadFavorites()); // Refresh after returning
@@ -80,7 +93,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         context,
         MaterialPageRoute(
           builder: (context) => TvSeriesDetail(
-            id: movie.id.toString(),
+            id: favorite.mediaId.toString(),
           ),
         ),
       ).then((_) => _loadFavorites()); // Refresh after returning
@@ -128,7 +141,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       ),
                       ElevatedButton(
                         onPressed: () async {
-                          await _favoritesService.clearAllFavorites();
+                          if (currentUser != null) {
+                            await BackendFavoritesService.clearAllFavorites(currentUser!.uid);
+                          }
                           Navigator.pop(context);
                           _loadFavorites();
                         },
@@ -209,14 +224,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
         padding: const EdgeInsets.all(16),
         itemCount: _favorites.length,
         itemBuilder: (context, index) {
-          final movie = _favorites[index];
-          return _buildFavoriteCard(movie);
+          final favorite = _favorites[index];
+          return _buildFavoriteCard(favorite);
         },
       ),
     );
   }
 
-  Widget _buildFavoriteCard(Movie movie) {
+  Widget _buildFavoriteCard(Favorite favorite) {
+    final posterPath = favorite.posterPath ?? '';
+    
     return Card(
       color: const Color(0xFF001E3C),
       margin: const EdgeInsets.only(bottom: 16),
@@ -225,7 +242,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       ),
       elevation: 4,
       child: InkWell(
-        onTap: () => _navigateToDetail(movie),
+        onTap: () => _navigateToDetail(favorite),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -235,9 +252,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
               // Poster
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: movie.posterPath.isNotEmpty
+                child: posterPath.isNotEmpty
                     ? Image.network(
-                        'https://image.tmdb.org/t/p/w200${movie.posterPath}',
+                        'https://image.tmdb.org/t/p/w200$posterPath',
                         width: 80,
                         height: 120,
                         fit: BoxFit.cover,
@@ -274,7 +291,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   children: [
                     // Title
                     Text(
-                      movie.title,
+                      favorite.title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -292,13 +309,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: movie.mediaType == 'movie'
+                        color: favorite.mediaType == 'movie'
                             ? Colors.blue[900]
                             : Colors.purple[900],
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        movie.mediaType == 'movie' ? 'MOVIE' : 'TV SERIES',
+                        favorite.mediaType == 'movie' ? 'MOVIE' : 'TV SERIES',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
@@ -318,7 +335,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          movie.voteAverage.toStringAsFixed(1),
+                          favorite.rating.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.amber,
                             fontSize: 14,
@@ -334,8 +351,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            movie.releaseDate.isNotEmpty
-                                ? movie.releaseDate.split('-')[0]
+                            (favorite.releaseDate ?? '').isNotEmpty
+                                ? favorite.releaseDate!.split('-')[0]
                                 : 'N/A',
                             style: TextStyle(
                               color: Colors.grey[400],
@@ -349,7 +366,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
                     // Overview
                     Text(
-                      movie.overview,
+                      favorite.overview ?? '',
                       style: TextStyle(
                         color: Colors.grey[400],
                         fontSize: 13,
@@ -369,7 +386,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   color: Colors.red,
                   size: 28,
                 ),
-                onPressed: () => _removeFromFavorites(movie),
+                onPressed: () => _removeFromFavorites(favorite),
               ),
             ],
           ),

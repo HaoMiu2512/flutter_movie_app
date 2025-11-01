@@ -7,7 +7,14 @@
       "Bash(flutter run:*)",
       "Bash(flutter:*)",
       "Bash(timeout:*)",
-      "Bash(keytool -list -v -keystore:*)"
+      "Bash(keytool -list -v -keystore:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 20844 -Force\")",
+      "Bash(powershell -Command \"Get-Process -Name node | Stop-Process -Force\")"
     ],
     "deny": [],
     "ask": []

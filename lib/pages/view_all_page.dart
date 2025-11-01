@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import '../apikey/apikey.dart';
+import '../config/api_config.dart';
 import '../details/checker.dart' show Descriptioncheckui;
 
 class ViewAllPage extends StatefulWidget {
   final String title;
   final String apiEndpoint;
   final String mediaType; // 'movie' or 'tv'
+  final bool useBackendApi; // New: Flag to use Backend API
 
   const ViewAllPage({
     super.key,
     required this.title,
     required this.apiEndpoint,
     required this.mediaType,
+    this.useBackendApi = false, // Default to TMDB
   });
 
   @override
@@ -58,35 +60,89 @@ class _ViewAllPageState extends State<ViewAllPage> {
     });
 
     try {
-      // Check if apiEndpoint already contains '?'
-      final separator = widget.apiEndpoint.contains('?') ? '&' : '?';
-      final url = '${widget.apiEndpoint}${separator}page=$currentPage';
+      String url;
+      
+      if (widget.useBackendApi) {
+        // Backend API (paginated)
+        url = '${ApiConfig.baseUrl}${widget.apiEndpoint}?page=$currentPage&limit=10';
+      } else {
+        // TMDB API
+        final separator = widget.apiEndpoint.contains('?') ? '&' : '?';
+        url = '${widget.apiEndpoint}${separator}page=$currentPage';
+      }
+
+      print('ViewAll: Loading from ${widget.useBackendApi ? "Backend" : "TMDB"}: $url');
       final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final List results = data['results'];
+        
+        List results;
+        int total;
+
+        if (widget.useBackendApi) {
+          // Backend API response format
+          if (data['success'] == true && data['data'] != null) {
+            results = data['data'] is List ? data['data'] : [];
+            total = data['pagination']?['pages'] ?? 1;
+          } else {
+            results = [];
+            total = 1;
+          }
+        } else {
+          // TMDB API response format
+          results = data['results'] ?? [];
+          total = data['total_pages'] ?? 1;
+        }
 
         setState(() {
-          items.addAll(results.map((item) => {
+          items.addAll(results.map((item) {
+            if (widget.useBackendApi) {
+              // Backend format - handle both Movies and TV Series
+              String posterPath = '';
+              if (item['poster'] != null) {
+                // Movies use 'poster' field
+                posterPath = (item['poster'] as String).replaceAll('https://image.tmdb.org/t/p/w500', '');
+              } else if (item['posterPath'] != null) {
+                // TV Series use 'posterPath' field
+                posterPath = (item['posterPath'] as String).replaceAll('https://image.tmdb.org/t/p/w500', '');
+              }
+
+              return {
+                'id': item['tmdbId'] ?? item['id'],
+                'poster_path': posterPath,
+                'title': item['title'] ?? item['name'] ?? 'Unknown',
+                'vote_average': ((item['rating'] ?? item['voteAverage']) ?? 0.0).toDouble(),
+                'release_date': item['year']?.toString() ?? item['firstAirDate'] ?? '',
+                'overview': item['overview'] ?? '',
+              };
+            } else {
+              // TMDB format
+              return {
                 'id': item['id'],
                 'poster_path': item['poster_path'],
                 'title': item['title'] ?? item['name'] ?? 'Unknown',
                 'vote_average': item['vote_average']?.toDouble() ?? 0.0,
                 'release_date': item['release_date'] ?? item['first_air_date'] ?? '',
                 'overview': item['overview'] ?? '',
-              }).toList());
-          totalPages = data['total_pages'];
+              };
+            }
+          }).toList());
+          totalPages = total;
           currentPage++;
           isLoading = false;
         });
+
+        print('ViewAll: Loaded ${results.length} items (page ${currentPage-1}/$totalPages)');
       } else {
+        print('ViewAll: Error ${response.statusCode}');
         setState(() {
           hasError = true;
           isLoading = false;
         });
       }
     } catch (e) {
+      print('ViewAll: Exception $e');
       setState(() {
         hasError = true;
         isLoading = false;
@@ -108,22 +164,39 @@ class _ViewAllPageState extends State<ViewAllPage> {
           ? _buildErrorWidget()
           : items.isEmpty && isLoading
               ? const Center(child: CircularProgressIndicator())
-              : GridView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 0.55,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: items.length + (isLoading ? 3 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= items.length) {
-                      return _buildLoadingCard();
-                    }
-                    return _buildMovieCard(items[index]);
-                  },
+              : Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(12),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 0.55,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: items.length + (isLoading && currentPage <= totalPages ? 3 : 0),
+                        itemBuilder: (context, index) {
+                          if (index >= items.length) {
+                            return _buildLoadingCard();
+                          }
+                          return _buildMovieCard(items[index]);
+                        },
+                      ),
+                    ),
+                    if (!isLoading && currentPage > totalPages && items.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'No more items',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
     );
   }

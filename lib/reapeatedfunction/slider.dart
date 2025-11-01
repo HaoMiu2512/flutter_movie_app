@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_movie_app/details/moviesdetail.dart';
 import 'package:flutter_movie_app/details/tvseriesdetail.dart';
 import '../pages/view_all_page.dart';
+import '../utils/page_transitions.dart';
 
 Widget sliderlist(
   List firstlistname,
@@ -10,6 +11,7 @@ Widget sliderlist(
   int itemcount, {
   String? apiEndpoint,
   BuildContext? context,
+  bool useBackendApi = false, // New parameter
 }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,17 +29,16 @@ Widget sliderlist(
                 color: Colors.cyan[300],
               ),
             ),
-            if (apiEndpoint != null && context != null)
+            if (apiEndpoint != null && apiEndpoint.isNotEmpty && context != null)
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context!,
-                    MaterialPageRoute(
-                      builder: (context) => ViewAllPage(
-                        title: categorytitle,
-                        apiEndpoint: apiEndpoint,
-                        mediaType: type,
-                      ),
+                  // Smooth transition to View All page
+                  context.slideUpToPage(
+                    ViewAllPage(
+                      title: categorytitle,
+                      apiEndpoint: apiEndpoint,
+                      mediaType: type,
+                      useBackendApi: useBackendApi, // Pass the flag
                     ),
                   );
                 },
@@ -88,22 +89,14 @@ Widget sliderlist(
             return GestureDetector(
               onTap: () {
                 if (type == 'movie') {
-                  // print(firstlistname[index]['id']);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          MoviesDetail(id: firstlistname[index]['id']),
-                    ),
+                  // Smooth transition to movie details
+                  context.smoothToPage(
+                    MoviesDetail(id: firstlistname[index]['id']),
                   );
                 } else if (type == 'tv') {
-                  // print(firstlistname[index]['id']);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          TvSeriesDetail(id: firstlistname[index]['id']),
-                    ),
+                  // Smooth transition to TV series details
+                  context.smoothToPage(
+                    TvSeriesDetail(id: firstlistname[index]['id']),
                   );
                 }
               },
