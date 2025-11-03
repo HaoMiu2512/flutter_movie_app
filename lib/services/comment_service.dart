@@ -61,22 +61,32 @@ class CommentService {
       final uri = Uri.parse(
           '$baseUrl/api/comments/$commentId/replies?page=$page&limit=$limit');
       
+      print('🔍 Fetching replies from: $uri');
       final response = await http.get(uri);
+      print('📡 Response status: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('✅ Decoded data success: ${data['success']}');
         
         if (data['success']) {
           final replies = (data['data'] as List)
               .map((commentJson) => Comment.fromJson(commentJson))
               .toList();
           
+          print('✅ Parsed ${replies.length} replies');
+          
           return {
             'success': true,
             'replies': replies,
             'pagination': data['pagination'],
           };
+        } else {
+          print('❌ Backend returned success: false, message: ${data['message']}');
         }
+      } else {
+        print('❌ HTTP error: ${response.statusCode}');
       }
 
       return {
@@ -85,7 +95,7 @@ class CommentService {
         'replies': <Comment>[],
       };
     } catch (e) {
-      print('Error getting replies: $e');
+      print('❌ Exception getting replies: $e');
       return {
         'success': false,
         'message': 'Error: $e',

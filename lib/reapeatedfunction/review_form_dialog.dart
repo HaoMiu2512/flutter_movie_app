@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/review.dart';
 import '../services/review_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ReviewFormDialog extends StatefulWidget {
   final String mediaType;
@@ -90,28 +91,14 @@ class _ReviewFormDialogState extends State<ReviewFormDialog> {
       if (result['success']) {
         Navigator.pop(context, true); // Return true to indicate success
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Review saved'),
-          ),
-        );
+        CustomSnackBar.showSuccess(context, result['message'] ?? 'Review saved');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Error saving review'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        CustomSnackBar.showError(context, result['message'] ?? 'Error saving review');
       }
     } catch (e) {
       setState(() => _isSubmitting = false);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      CustomSnackBar.showError(context, 'Error: $e');
     }
   }
 

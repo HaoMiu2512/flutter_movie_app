@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../main_screen.dart';
 import '../services/auth_service.dart';
 import 'phone_auth_page.dart';
+import '../widgets/custom_snackbar.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -46,13 +47,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
         if (mounted) {
           // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Registration successful!'),
-              backgroundColor: Colors.green[600],
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          CustomSnackBar.showSuccess(context, 'Registration successful!');
 
           // Navigate to HomePage
           Navigator.pushReplacement(
@@ -64,13 +59,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       } finally {
         if (mounted) {
@@ -108,13 +97,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Google Sign-In successful!'),
-            backgroundColor: Colors.green[600],
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        CustomSnackBar.showSuccess(context, 'Google Sign-In successful!');
 
         // Navigate to HomePage
         Navigator.pushReplacement(
@@ -128,13 +111,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         // Only show error if it's not a cancellation
         if (!e.toString().contains('cancelled')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       }
     } finally {
@@ -162,13 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Facebook Sign-In successful!'),
-            backgroundColor: Colors.green[600],
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        CustomSnackBar.showSuccess(context, 'Facebook Sign-In successful!');
 
         // Navigate to HomePage
         Navigator.pushReplacement(
@@ -182,13 +153,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         // Only show error if it's not a cancellation
         if (!e.toString().contains('cancelled')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       }
     } finally {

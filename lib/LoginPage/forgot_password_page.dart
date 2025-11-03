@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -32,14 +33,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
         if (mounted) {
           // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Password reset email has been sent!\nPlease check your inbox.',
-              ),
-              backgroundColor: Colors.green[600],
-              duration: const Duration(seconds: 4),
-            ),
+          CustomSnackBar.showSuccess(
+            context,
+            'Password reset email has been sent!\nPlease check your inbox.',
           );
 
           // Wait a bit then navigate back
@@ -50,13 +46,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       } finally {
         if (mounted) {

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/review.dart';
 import '../services/review_service.dart';
 import 'review_form_dialog.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ReviewsWidget extends StatefulWidget {
   final String mediaType;
@@ -160,9 +161,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget> {
 
   Future<void> _voteReview(Review review, String voteType) async {
     if (widget.userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to vote')),
-      );
+      CustomSnackBar.showError(context, 'Please login to vote');
       return;
     }
 
@@ -208,9 +207,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget> {
         _loadUserReview();
         _loadStats();
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Review deleted')),
-        );
+        CustomSnackBar.showSuccess(context, 'Review deleted');
       }
     }
   }

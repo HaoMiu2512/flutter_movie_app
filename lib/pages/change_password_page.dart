@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -92,13 +93,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   void _showSnackBar(String message, Color color) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: color,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (color == Colors.green) {
+        CustomSnackBar.showSuccess(context, message);
+      } else if (color == Colors.red) {
+        CustomSnackBar.showError(context, message);
+      } else if (color == Colors.orange) {
+        CustomSnackBar.showWarning(context, message);
+      } else {
+        CustomSnackBar.showInfo(context, message);
+      }
     }
   }
 

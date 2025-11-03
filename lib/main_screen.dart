@@ -3,6 +3,7 @@ import 'package:responsive_navigation_bar/responsive_navigation_bar.dart';
 import 'HomePage/HomePage.dart';
 import 'pages/favorites_page.dart';
 import 'pages/profile_page.dart';
+import 'pages/my_lists_page.dart';
 
 class MainScreen extends StatefulWidget {
   final String? username;
@@ -23,6 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     _pages.addAll([
       HomePage(username: widget.username),
       const FavoritesPage(),
+      const MyListsPage(),
       const ProfilePage(),
     ]);
   }
@@ -82,6 +84,16 @@ class _MainScreenState extends State<MainScreen> {
                 colors: [
                   const Color(0xFFFF0080),
                   const Color(0xFFFF1744),
+                ],
+              ),
+            ),
+            NavigationBarButton(
+              text: 'My Lists',
+              icon: Icons.bookmark_rounded,
+              backgroundGradient: LinearGradient(
+                colors: [
+                  const Color(0xFF00BCD4),
+                  const Color(0xFF00ACC1),
                 ],
               ),
             ),

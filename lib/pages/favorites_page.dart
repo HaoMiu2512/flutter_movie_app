@@ -4,6 +4,7 @@ import '../models/favorite.dart';
 import '../services/backend_favorites_service.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
+import '../widgets/custom_snackbar.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -67,12 +68,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${favorite.title} removed from favorites'),
-            backgroundColor: Colors.orange[700],
-            duration: const Duration(seconds: 2),
-          ),
+        CustomSnackBar.showSuccess(
+          context,
+          '${favorite.title} removed from favorites',
         );
       }
     }

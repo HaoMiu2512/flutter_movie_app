@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../main_screen.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String verificationId;
@@ -82,13 +83,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           _startResendTimer();
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('OTP code has been resent!'),
-                backgroundColor: Colors.green[600],
-                duration: const Duration(seconds: 2),
-              ),
-            );
+            CustomSnackBar.showSuccess(context, 'OTP code has been resent!');
           }
         },
         verificationFailed: (String error) {
@@ -97,13 +92,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           });
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(error),
-                backgroundColor: Colors.red[600],
-                duration: const Duration(seconds: 3),
-              ),
-            );
+            CustomSnackBar.showError(context, error);
           }
         },
         verificationCompleted: (credential) async {
@@ -140,13 +129,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red[600],
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        CustomSnackBar.showError(context, e.toString());
       }
     }
   }
@@ -171,13 +154,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
         if (mounted) {
           // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Phone verification successful!'),
-              backgroundColor: Colors.green[600],
-              duration: const Duration(seconds: 2),
-            ),
-          );
+          CustomSnackBar.showSuccess(context, 'Phone verification successful!');
 
           // Navigate to MainScreen
           Navigator.pushAndRemoveUntil(
@@ -190,13 +167,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       } finally {
         if (mounted) {

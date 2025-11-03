@@ -4,6 +4,7 @@ import '../services/backend_recently_viewed_service.dart';
 import '../models/recently_viewed.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
+import '../widgets/custom_snackbar.dart';
 
 class RecentlyViewedAllPage extends StatefulWidget {
   const RecentlyViewedAllPage({super.key});
@@ -62,24 +63,18 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
         if (currentUser != null) {
           await BackendRecentlyViewedService.clearRecentlyViewed(currentUser!.uid);
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Recently viewed cleared successfully'),
-                backgroundColor: Colors.green[700],
-                duration: const Duration(seconds: 2),
-              ),
+            CustomSnackBar.showSuccess(
+              context,
+              'Recently viewed cleared successfully',
             );
             Navigator.pop(context);
           }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to clear recently viewed: $e'),
-              backgroundColor: Colors.red[700],
-              duration: const Duration(seconds: 2),
-            ),
+          CustomSnackBar.showError(
+            context,
+            'Failed to clear recently viewed: $e',
           );
         }
       } finally {

@@ -14,6 +14,8 @@ import 'package:flutter_movie_app/services/backend_recently_viewed_service.dart'
 import 'package:flutter_movie_app/services/tv_series_detail_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_movie_app/widgets/custom_snackbar.dart';
+import 'package:flutter_movie_app/widgets/add_to_list_button.dart';
 
 class TvSeriesDetail extends StatefulWidget {
   var id;
@@ -57,10 +59,13 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
         // Populate TvSeriesDetails from Backend
         TvSeriesDetails.add({
           'backdrop_path': tvSeriesDetail.backdropPath?.replaceAll('https://image.tmdb.org/t/p/w500', '') ?? '',
-          'title': tvSeriesDetail.name,
+          'poster_path': tvSeriesDetail.posterPath?.replaceAll('https://image.tmdb.org/t/p/w500', '') ?? '',
+          'name': tvSeriesDetail.name,  // Use 'name' for TV series
+          'title': tvSeriesDetail.name,  // Also keep 'title' for compatibility
           'vote_average': tvSeriesDetail.voteAverage,
           'overview': tvSeriesDetail.overview,
           'status': tvSeriesDetail.status,
+          'first_air_date': tvSeriesDetail.firstAirDate ?? '',
           'releasedate': tvSeriesDetail.firstAirDate ?? '',
         });
 
@@ -136,10 +141,13 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
       for (var i = 0; i < 1; i++) {
         TvSeriesDetails.add({
           'backdrop_path': tvseriesdetaildata['backdrop_path'],
-          'title': tvseriesdetaildata['original_name'],
+          'poster_path': tvseriesdetaildata['poster_path'],
+          'name': tvseriesdetaildata['name'] ?? tvseriesdetaildata['original_name'],  // Use 'name' for TV series
+          'title': tvseriesdetaildata['name'] ?? tvseriesdetaildata['original_name'],  // Also keep 'title'
           'vote_average': tvseriesdetaildata['vote_average'],
           'overview': tvseriesdetaildata['overview'],
           'status': tvseriesdetaildata['status'],
+          'first_air_date': tvseriesdetaildata['first_air_date'],
           'releasedate': tvseriesdetaildata['first_air_date'],
         });
       }
@@ -518,16 +526,9 @@ class _TvSeriesDetailState extends State<TvSeriesDetail> {
     await _checkFavoriteStatus();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isFavorite
-                ? 'Added to favorites'
-                : 'Removed from favorites',
-          ),
-          backgroundColor: _isFavorite ? Colors.green[700] : Colors.orange[700],
-          duration: const Duration(seconds: 2),
-        ),
+      CustomSnackBar.showSuccess(
+        context,
+        _isFavorite ? 'Added to favorites' : 'Removed from favorites',
       );
     }
   }
@@ -671,37 +672,9 @@ Shared from Flick Movie App
       await Clipboard.setData(ClipboardData(text: seriesLink));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Link copied!',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        seriesLink,
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green[700],
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
+        CustomSnackBar.showSuccess(
+          context,
+          'Link copied!',
         );
       }
     } catch (e) {
@@ -865,19 +838,27 @@ Shared from Flick Movie App
                                 color: Colors.white),
                         actions: [
                           IconButton(
-                            onPressed: _copyTvSeriesLink,
-                            icon: const Icon(Icons.link),
-                            iconSize: 26,
-                            color: Colors.white,
-                            tooltip: 'Copy link',
-                          ),
-                          IconButton(
                             onPressed: _shareTvSeries,
                             icon: const Icon(Icons.share),
                             iconSize: 26,
                             color: Colors.white,
                             tooltip: 'Share TV series',
                           ),
+                          if (TvSeriesDetails.isNotEmpty)
+                            AddToListButton(
+                              itemId: widget.id.toString(),
+                              itemType: 'tv',
+                              title: TvSeriesDetails[0]['name']?.toString() ?? 
+                                     TvSeriesDetails[0]['original_name']?.toString() ?? 
+                                     'Unknown TV Series',
+                              posterPath: TvSeriesDetails[0]['poster_path']?.toString(),
+                              backdropPath: TvSeriesDetails[0]['backdrop_path']?.toString(),
+                              overview: TvSeriesDetails[0]['overview']?.toString(),
+                              releaseDate: TvSeriesDetails[0]['first_air_date']?.toString(),
+                              voteAverage: (TvSeriesDetails[0]['vote_average'] as num?)?.toDouble(),
+                              iconColor: Colors.white,
+                              iconSize: 26,
+                            ),
                           IconButton(
                             onPressed: _toggleFavorite,
                             icon: Icon(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../widgets/custom_snackbar.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -64,52 +65,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showSnackBar(String message, {String? title, Color? iconColor, IconData? icon}) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, color: iconColor ?? Colors.white, size: 24),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (title != null) ...[
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                    Text(
-                      message,
-                      style: TextStyle(
-                        color: title != null ? Colors.grey[300] : Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF0A1929),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: iconColor?.withValues(alpha: 0.5) ?? Colors.cyan.withValues(alpha: 0.5)),
-          ),
-          padding: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      // Use CustomSnackBar based on icon color
+      if (iconColor == Colors.orange) {
+        CustomSnackBar.showWarning(context, message);
+      } else if (iconColor == Colors.blue) {
+        CustomSnackBar.showInfo(context, message);
+      } else if (iconColor == Colors.green) {
+        CustomSnackBar.showSuccess(context, message);
+      } else if (iconColor == Colors.red) {
+        CustomSnackBar.showError(context, message);
+      } else {
+        CustomSnackBar.showInfo(context, message);
+      }
     }
   }
 

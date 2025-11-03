@@ -14,6 +14,8 @@ import 'package:flutter_movie_app/services/backend_favorites_service.dart';
 import 'package:flutter_movie_app/services/backend_recently_viewed_service.dart';
 import 'package:flutter_movie_app/services/movie_detail_service.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_movie_app/widgets/custom_snackbar.dart';
+import 'package:flutter_movie_app/widgets/add_to_list_button.dart';
 
 class MoviesDetail extends StatefulWidget {
   var id;
@@ -138,16 +140,9 @@ class _MoviesDetailState extends State<MoviesDetail> {
     await _checkFavoriteStatus();
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _isFavorite
-                ? 'Added to favorites'
-                : 'Removed from favorites',
-          ),
-          backgroundColor: _isFavorite ? Colors.green[700] : Colors.orange[700],
-          duration: const Duration(seconds: 2),
-        ),
+      CustomSnackBar.showSuccess(
+        context,
+        _isFavorite ? 'Added to favorites' : 'Removed from favorites',
       );
     }
   }
@@ -291,37 +286,9 @@ Shared from Flick Movie App
       await Clipboard.setData(ClipboardData(text: movieLink));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Link copied!',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        movieLink,
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green[700],
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
+        CustomSnackBar.showSuccess(
+          context,
+          'Link copied!',
         );
       }
     } catch (e) {
@@ -943,6 +910,21 @@ Shared from Flick Movie App
                       color: Colors.white,
                       tooltip: 'Share movie',
                     ),
+                    if (MovieDetails.isNotEmpty)
+                      AddToListButton(
+                        itemId: widget.id.toString(),
+                        itemType: 'movie',
+                        title: MovieDetails[0]['title']?.toString() ?? 
+                               MovieDetails[0]['original_title']?.toString() ?? 
+                               'Unknown Movie',
+                        posterPath: MovieDetails[0]['poster_path']?.toString(),
+                        backdropPath: MovieDetails[0]['backdrop_path']?.toString(),
+                        overview: MovieDetails[0]['overview']?.toString(),
+                        releaseDate: MovieDetails[0]['release_date']?.toString(),
+                        voteAverage: (MovieDetails[0]['vote_average'] as num?)?.toDouble(),
+                        iconColor: Colors.white,
+                        iconSize: 26,
+                      ),
                     IconButton(
                       onPressed: _toggleFavorite,
                       icon: Icon(

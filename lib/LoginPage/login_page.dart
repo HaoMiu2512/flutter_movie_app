@@ -4,6 +4,7 @@ import 'register_page.dart';
 import 'forgot_password_page.dart';
 import 'phone_auth_page.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -53,13 +54,7 @@ class _LoginPageState extends State<LoginPage> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       } finally {
         if (mounted) {
@@ -107,13 +102,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         // Only show error if it's not a cancellation
         if (!e.toString().contains('cancelled')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       }
     } finally {
@@ -141,13 +130,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (mounted) {
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Facebook Sign-In successful!'),
-            backgroundColor: Colors.green[600],
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        CustomSnackBar.showSuccess(context, 'Facebook Sign-In successful!');
 
         // Navigate to MainScreen
         Navigator.pushReplacement(
@@ -161,13 +144,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         // Only show error if it's not a cancellation
         if (!e.toString().contains('cancelled')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       }
     } finally {

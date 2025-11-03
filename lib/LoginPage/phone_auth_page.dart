@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'otp_verification_page.dart';
+import '../widgets/custom_snackbar.dart';
 
 class PhoneAuthPage extends StatefulWidget {
   const PhoneAuthPage({super.key});
@@ -58,13 +59,7 @@ class _PhoneAuthPageState extends State<PhoneAuthPage> {
             });
 
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(error),
-                  backgroundColor: Colors.red[600],
-                  duration: const Duration(seconds: 3),
-                ),
-              );
+              CustomSnackBar.showError(context, error);
             }
           },
           verificationCompleted: (PhoneAuthCredential credential) async {
@@ -76,12 +71,7 @@ class _PhoneAuthPageState extends State<PhoneAuthPage> {
               });
 
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Phone verification successful!'),
-                    backgroundColor: Colors.green[600],
-                  ),
-                );
+                CustomSnackBar.showSuccess(context, 'Phone verification successful!');
                 Navigator.pop(context);
               }
             } catch (e) {
@@ -100,13 +90,7 @@ class _PhoneAuthPageState extends State<PhoneAuthPage> {
         });
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: Colors.red[600],
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          CustomSnackBar.showError(context, e.toString());
         }
       }
     }

@@ -13,6 +13,7 @@ import 'change_password_page.dart';
 import 'recently_viewed_all_page.dart';
 import 'settings_page.dart';
 import '../LoginPage/login_page.dart';
+import '../widgets/custom_snackbar.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -377,13 +378,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _showSnackBar(String message, Color color) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: color,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (color == Colors.green) {
+        CustomSnackBar.showSuccess(context, message);
+      } else if (color == Colors.red) {
+        CustomSnackBar.showError(context, message);
+      } else if (color == Colors.orange) {
+        CustomSnackBar.showWarning(context, message);
+      } else {
+        CustomSnackBar.showInfo(context, message);
+      }
     }
   }
 

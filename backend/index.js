@@ -42,6 +42,9 @@ app.use('/api/upload', require('./src/routes/upload'));
 app.use('/api/comments', require('./src/routes/commentRoutes'));
 app.use('/api/reviews', require('./src/routes/reviewRoutes'));
 
+// Watchlist routes
+app.use('/api/watchlists', require('./src/routes/watchlistRoutes'));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
@@ -84,7 +87,11 @@ app.get('/', (req, res) => {
       createComment: 'POST /api/comments/:mediaType/:mediaId',
       reviews: '/api/reviews/:mediaType/:mediaId',
       createReview: 'POST /api/reviews/:mediaType/:mediaId',
-      reviewStats: '/api/reviews/:mediaType/:mediaId/stats'
+      reviewStats: '/api/reviews/:mediaType/:mediaId/stats',
+      watchlists: '/api/watchlists',
+      createWatchlist: 'POST /api/watchlists',
+      addToWatchlist: 'POST /api/watchlists/:id/items',
+      checkInWatchlist: '/api/watchlists/check?itemId=xxx&itemType=movie'
     }
   });
 });
