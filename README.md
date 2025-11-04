@@ -138,9 +138,9 @@ Flick is a modern full-stack mobile application that allows users to discover, b
 ### 📤 **Share Functionality**
 - ✅ **Share Button** - Share icon in movie/TV series detail pages
 - ✅ **Bottom Sheet UI** - Modern modal bottom sheet interface
-- ✅ **Copy Link** - Copy TMDB URL to clipboard with success notification
+- ✅ **Copy Link** - Copy URL to clipboard with success notification
 - ✅ **Share via Apps** - Native share dialog for WhatsApp, Messenger, Email, etc.
-- ✅ **TMDB Links** - Direct links to content on The Movie Database
+- ✅ **Direct Links** - Links to content details
 - ✅ **Both Media Types** - Works for both Movies and TV Series
 - ✅ **Styled Interface** - Custom themed bottom sheet matching app design
 
@@ -225,7 +225,7 @@ Flick is a modern full-stack mobile application that allows users to discover, b
 - ✅ **App Name**: "Flick" throughout entire app
 
 #### Image Optimization:
-- ✅ **Cached Images** - CachedNetworkImage for all TMDB images
+- ✅ **Image Caching** - CachedNetworkImage for all images
 - ✅ **Loading Placeholders** - Shimmer effect while loading
 - ✅ **Error Placeholders** - Fallback for broken images
 - ✅ **Memory Management** - Automatic cache cleanup
@@ -233,7 +233,7 @@ Flick is a modern full-stack mobile application that allows users to discover, b
 ### 🚀 **Performance Optimizations**
 
 #### Backend Optimizations:
-- ✅ **MongoDB Caching** - Cache TMDB responses for 24 hours
+- ✅ **MongoDB Caching** - Cache API responses for 24 hours
 - ✅ **Parallel Loading** - Future.wait() for concurrent API calls
 - ✅ **60% Faster Loading** - Detail pages load much faster
 - ✅ **Cache Validation** - isCacheValid() checks timestamps
@@ -256,7 +256,7 @@ Flick is a modern full-stack mobile application that allows users to discover, b
 ### **Node.js + MongoDB Backend**
 - ✅ **Express.js Server** - RESTful API architecture
 - ✅ **MongoDB Database** - NoSQL for flexible data storage
-- ✅ **TMDB Proxy** - Cache TMDB API responses
+- ✅ **API Proxy** - Cache movie database API responses
 - ✅ **Caching Strategy**:
   - Movie Details: 24 hours
   - TV Series Details: 24 hours
@@ -370,7 +370,7 @@ POST /api/upload/avatar          - Upload avatar image
 
 3. **Firebase Account** (Free tier)
 
-4. **TMDB API Key** (Free registration at https://www.themoviedb.org/settings/api)
+4. **Movie Database API Key** (Contact project owner for access)
 
 5. **Node.js** (18.x or higher) for backend server
 
@@ -419,16 +419,16 @@ See detailed guides:
 5. Set up Firebase Storage
 6. Run `flutterfire configure` to generate `firebase_options.dart`
 
-#### 3️⃣ **Configure TMDB API**
+#### 3️⃣ **Configure API Keys**
 
 ```dart
 // lib/apikey/apikey.dart
 class ApiKey {
-  static const String tmdbApi = 'YOUR_TMDB_API_KEY';
+  static const String tmdbApi = 'YOUR_API_KEY_HERE';
 }
 ```
 
-Get your API key: https://www.themoviedb.org/settings/api
+**Note:** Contact the project owner for API access credentials.
 
 #### 4️⃣ **Setup and Start Backend Server**
 
@@ -439,9 +439,11 @@ See detailed guide: [BACKEND_SETUP.md](BACKEND_SETUP.md)
 cd backend
 
 # Create .env file
-echo "TMDB_API_KEY=your_tmdb_api_key" > .env
+echo "TMDB_API_KEY=your_api_key" > .env
 echo "MONGODB_URI=mongodb://localhost:27017/flick" >> .env
 echo "PORT=3000" >> .env
+
+# Note: Contact project owner for API credentials
 
 # Start MongoDB (if running locally)
 # Windows: Start MongoDB service from Services
@@ -455,7 +457,7 @@ node index.js
 ```
 
 **Backend Features:**
-- TMDB API caching (60% faster loading)
+- Movie database API caching (60% faster loading)
 - MongoDB for persistent storage
 - Favorites, Recently Viewed, Watchlists APIs
 - Comments and Reviews system
@@ -704,7 +706,7 @@ flutter_movie_app/
 │   │   └── currency_formatter.dart
 │   │
 │   ├── apikey/                   # API keys
-│   │   └── apikey.dart           # TMDB API key
+│   │   └── apikey.dart           # API key configuration
 │   │
 │   ├── apilinks/                 # API endpoints
 │   │   └── apilinks.dart         # Backend URLs
@@ -739,34 +741,24 @@ flutter_movie_app/
 
 ## 🎯 API Integration
 
-### TMDB (The Movie Database)
-- **Base URL**: `https://api.themoviedb.org/3`
+### Movie Database API
 - **Image Base URL**: `https://image.tmdb.org/t/p/w500`
-- **Documentation**: [TMDB API Docs](https://developers.themoviedb.org/3)
+- **Note**: API access is restricted. Contact project owner for credentials.
 
-**Key Endpoints Used:**
-```
-/trending/all/{time_window}     - Trending content
-/movie/popular                  - Popular movies
-/movie/top_rated                - Top rated movies
-/movie/now_playing              - Now playing
-/movie/upcoming                 - Upcoming releases
-/movie/{id}                     - Movie details
-/movie/{id}/videos              - Movie videos
-/tv/popular                     - Popular TV series
-/tv/top_rated                   - Top rated TV series
-/tv/on_the_air                  - On the air
-/tv/{id}                        - TV series details
-/tv/{id}/videos                 - TV series videos
-/search/multi                   - Multi search
-```
+**Key Features:**
+- Trending content (daily/weekly)
+- Popular and top-rated movies/TV shows
+- Now playing and upcoming releases
+- Detailed movie and TV series information
+- Video trailers and cast information
+- Multi-search functionality
 
 ### Backend API
 - **Base URL**: `http://localhost:3000` (Development)
 - **Production**: Configure in `lib/apilinks/apilinks.dart`
 
 **Features:**
-- **Caching Layer**: MongoDB caches TMDB responses for 24 hours
+- **Caching Layer**: MongoDB caches API responses for 24 hours
 - **60% Performance Improvement**: Faster loading for detail pages
 - **User Data**: Favorites, Recently Viewed, Watchlists stored in MongoDB
 - **File Upload**: Multer handles avatar images
@@ -819,9 +811,11 @@ chatrooms/
 ## 🔒 Security & Best Practices
 
 ### API Key Security
-✅ **TMDB API Key**: Stored in `lib/apikey/apikey.dart` (add to `.gitignore`)
+✅ **API Keys**: Stored in `lib/apikey/apikey.dart` (add to `.gitignore`)
 ✅ **Backend .env**: Environment variables for sensitive data
 ✅ **Firebase Config**: Use `firebase_options.dart` generated by FlutterFire CLI
+
+**Important:** Never commit API keys or `.env` files to version control.
 
 ### Firestore Security Rules
 ✅ **User Data Protection**: Users can only read/write their own data
@@ -1029,7 +1023,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 ### APIs & Services:
-- **[TMDB](https://www.themoviedb.org/)** - Movie and TV series data
+- **Movie Database** - Movie and TV series data
 - **[Firebase](https://firebase.google.com/)** - Authentication, Firestore, Storage
 - **[MongoDB](https://www.mongodb.com/)** - Backend database
 - **[YouTube](https://www.youtube.com/)** - Video trailers
@@ -1045,7 +1039,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Resources:
 - **Flutter Documentation**: https://docs.flutter.dev
 - **Firebase Docs**: https://firebase.google.com/docs
-- **TMDB API Docs**: https://developers.themoviedb.org
 - **MongoDB Docs**: https://docs.mongodb.com
 
 ---
