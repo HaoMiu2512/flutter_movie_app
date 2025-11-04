@@ -3,6 +3,7 @@ import '../main_screen.dart';
 import '../services/auth_service.dart';
 import 'phone_auth_page.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -52,8 +53,9 @@ class _RegisterPageState extends State<RegisterPage> {
           // Navigate to HomePage
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => MainScreen(username: username),
+            PageTransitions.fade(
+              page: MainScreen(username: username),
+              duration: const Duration(milliseconds: 400),
             ),
           );
         }
@@ -75,8 +77,9 @@ class _RegisterPageState extends State<RegisterPage> {
     // Navigate to Phone Authentication page
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const PhoneAuthPage(),
+      PageTransitions.slideAndFade(
+        page: const PhoneAuthPage(),
+        duration: const Duration(milliseconds: 350),
       ),
     );
   }
@@ -102,8 +105,9 @@ class _RegisterPageState extends State<RegisterPage> {
         // Navigate to HomePage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScreen(username: username),
+          PageTransitions.fade(
+            page: MainScreen(username: username),
+            duration: const Duration(milliseconds: 400),
           ),
         );
       }
@@ -144,8 +148,9 @@ class _RegisterPageState extends State<RegisterPage> {
         // Navigate to HomePage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScreen(username: username),
+          PageTransitions.fade(
+            page: MainScreen(username: username),
+            duration: const Duration(milliseconds: 400),
           ),
         );
       }

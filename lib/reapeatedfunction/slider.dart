@@ -3,6 +3,7 @@ import 'package:flutter_movie_app/details/moviesdetail.dart';
 import 'package:flutter_movie_app/details/tvseriesdetail.dart';
 import '../pages/view_all_page.dart';
 import '../utils/page_transitions.dart';
+import '../widgets/cached_movie_image.dart';
 
 Widget sliderlist(
   List firstlistname,
@@ -101,31 +102,37 @@ Widget sliderlist(
                 }
               },
               child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  image: DecorationImage(
-                    colorFilter: ColorFilter.mode(
-                      Colors.black.withValues(alpha: 0.2),
-                      BlendMode.darken,
-                    ),
-                    image: NetworkImage(
-                      'https://image.tmdb.org/t/p/w500${firstlistname[index]['poster_path']}',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
-                ),
                 margin: EdgeInsets.only(left: 13),
                 width: 170,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2, left: 6),
-                      child: Text(firstlistname[index]['date']),
+                    // Cached image with loading placeholder
+                    CachedMoviePoster(
+                      posterPath: firstlistname[index]['poster_path'] ?? '',
+                      width: 170,
+                      height: 250,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2, right: 6),
+                    // Date and Rating overlay
+                    Positioned(
+                      top: 2,
+                      left: 6,
+                      child: Text(
+                        firstlistname[index]['date'],
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.8),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 2,
+                      right: 6,
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.cyan.withValues(alpha: 0.3),
@@ -135,26 +142,24 @@ Widget sliderlist(
                             width: 1,
                           ),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            top: 2.0,
-                            bottom: 2.0,
-                            left: 5.0,
-                            right: 5.0,
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                                size: 15,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                firstlistname[index]['vote_average'].toString(),
-                              ),
-                            ],
-                          ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 15,
+                            ),
+                            SizedBox(width: 2),
+                            Text(
+                              firstlistname[index]['vote_average'].toString(),
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
                     ),

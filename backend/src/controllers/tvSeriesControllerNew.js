@@ -355,6 +355,10 @@ async function getTVSeriesDetails(req, res) {
       { upsert: true, new: true }
     );
     
+    // ✅ Update timestamp to make cache valid
+    savedTV.lastFetched = new Date();
+    await savedTV.save();
+    
     console.log(`✅ Cached TV series ${tmdbId}`);
     
     res.json({
@@ -407,7 +411,9 @@ async function getTVSeriesVideos(req, res) {
         type: video.type,
         official: video.official
       }));
+      cachedTV.lastFetched = new Date(); // ✅ Update timestamp!
       await cachedTV.save();
+      console.log(`💾 Cached ${cachedTV.videos.length} videos for TV series ${tmdbId}`);
     }
     
     res.json({

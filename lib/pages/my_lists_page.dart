@@ -330,8 +330,12 @@ class _MyListsPageState extends State<MyListsPage> {
         : null;
 
     return GestureDetector(
-      onTap: () {
-        context.smoothToPage(WatchlistDetailPage(watchlist: watchlist));
+      onTap: () async {
+        final result = await context.smoothToPage(WatchlistDetailPage(watchlist: watchlist));
+        // If list was deleted or modified, reload the list
+        if (result == true && mounted) {
+          _loadWatchlists();
+        }
       },
       child: Container(
         decoration: BoxDecoration(

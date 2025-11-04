@@ -411,7 +411,7 @@ class _WatchlistDetailPageState extends State<WatchlistDetailPage> {
     if (confirm == true) {
       final success = await WatchlistService.deleteWatchlist(_watchlist.id);
       if (success && mounted) {
-        Navigator.pop(context); // Go back to My Lists page
+        Navigator.pop(context, true); // Return true to signal deletion
         CustomSnackBar.showSuccess(
           context,
           'List deleted',
@@ -427,7 +427,6 @@ class _WatchlistDetailPageState extends State<WatchlistDetailPage> {
 
   Future<void> _editWatchlist() async {
     final nameController = TextEditingController(text: _watchlist.name);
-    final descController = TextEditingController(text: _watchlist.description);
     bool isPublic = _watchlist.isPublic;
 
     final result = await showDialog<bool>(
@@ -457,24 +456,6 @@ class _WatchlistDetailPageState extends State<WatchlistDetailPage> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'List Name',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.cyan.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.cyan),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Description',
                   labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.cyan.withValues(alpha: 0.3)),
@@ -532,7 +513,7 @@ class _WatchlistDetailPageState extends State<WatchlistDetailPage> {
       final watchlist = await WatchlistService.updateWatchlist(
         watchlistId: _watchlist.id,
         name: nameController.text.trim(),
-        description: descController.text.trim(),
+        description: _watchlist.description, // Keep existing description
         isPublic: isPublic,
       );
 

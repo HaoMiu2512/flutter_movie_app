@@ -648,7 +648,7 @@ class _CommentsWidgetState extends State<CommentsWidget> {
                       icon: const Icon(Icons.delete_outline, size: 20),
                       color: Colors.red.shade300,
                       onPressed: () => _deleteComment(comment),
-                      tooltip: 'Xóa',
+                      tooltip: 'Delete',
                     ),
                   ),
               ],

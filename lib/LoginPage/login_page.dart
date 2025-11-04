@@ -5,6 +5,7 @@ import 'forgot_password_page.dart';
 import 'phone_auth_page.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -47,8 +48,9 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => MainScreen(username: username),
+            PageTransitions.fade(
+              page: MainScreen(username: username),
+              duration: const Duration(milliseconds: 400),
             ),
           );
         }
@@ -70,8 +72,9 @@ class _LoginPageState extends State<LoginPage> {
     // Navigate to Phone Authentication page
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const PhoneAuthPage(),
+      PageTransitions.slideAndFade(
+        page: const PhoneAuthPage(),
+        duration: const Duration(milliseconds: 350),
       ),
     );
   }
@@ -93,8 +96,9 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScreen(username: username),
+          PageTransitions.fade(
+            page: MainScreen(username: username),
+            duration: const Duration(milliseconds: 400),
           ),
         );
       }
@@ -135,8 +139,9 @@ class _LoginPageState extends State<LoginPage> {
         // Navigate to MainScreen
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScreen(username: username),
+          PageTransitions.fade(
+            page: MainScreen(username: username),
+            duration: const Duration(milliseconds: 400),
           ),
         );
       }
@@ -327,8 +332,9 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const ForgotPasswordPage(),
+                            PageTransitions.slideAndFade(
+                              page: const ForgotPasswordPage(),
+                              duration: const Duration(milliseconds: 350),
                             ),
                           );
                         },
@@ -504,8 +510,9 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterPage(),
+                              PageTransitions.slideAndFade(
+                                page: const RegisterPage(),
+                                duration: const Duration(milliseconds: 350),
                               ),
                             );
                           },

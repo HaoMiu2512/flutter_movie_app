@@ -16,6 +16,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_movie_app/widgets/custom_snackbar.dart';
 import 'package:flutter_movie_app/widgets/add_to_list_button.dart';
+import 'package:flutter_movie_app/utils/page_transitions.dart';
 
 class TvSeriesDetail extends StatefulWidget {
   var id;
@@ -873,8 +874,10 @@ Shared from Flick Movie App
 
                                 Navigator.pushAndRemoveUntil(
                                     context,
-                                    MaterialPageRoute(
-                                        builder: (context) => const MainScreen()),
+                                    PageTransitions.fade(
+                                      page: const MainScreen(),
+                                      duration: const Duration(milliseconds: 300),
+                                    ),
                                     (route) => false);
                               },
                               icon: Icon(FontAwesomeIcons.houseUser),

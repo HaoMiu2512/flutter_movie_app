@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 import '../config/api_config.dart';
 
 /// Service for uploading files to backend
@@ -17,16 +19,28 @@ class BackendUploadService {
       // Create multipart request
       final request = http.MultipartRequest('POST', Uri.parse(url));
       
-      // Add file
+      // Add file with proper content type
       final stream = http.ByteStream(imageFile.openRead());
       final length = await imageFile.length();
+      
+      // Detect mime type from file extension
+      final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
+      final contentType = MediaType.parse(mimeType);
+      
       final multipartFile = http.MultipartFile(
         'avatar',
         stream,
         length,
         filename: imageFile.path.split('/').last,
+        contentType: contentType,
       );
       request.files.add(multipartFile);
+      
+      print('📤 Uploading file:');
+      print('   Path: ${imageFile.path}');
+      print('   Filename: ${imageFile.path.split('/').last}');
+      print('   Size: $length bytes');
+      print('   Content-Type: $mimeType');
       
       // Add userId field
       request.fields['userId'] = userId;

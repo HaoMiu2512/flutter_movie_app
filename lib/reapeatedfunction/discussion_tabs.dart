@@ -111,7 +111,7 @@ class _DiscussionTabsState extends State<DiscussionTabs>
                   children: [
                     const Icon(Icons.chat_bubble_outline, size: 20),
                     const SizedBox(width: 8),
-                    const Text('Bình Luận'),
+                    const Text('Comments'),
                     if (_commentStats != null && _commentStats!.totalComments > 0)
                       Container(
                         margin: const EdgeInsets.only(left: 8),
@@ -148,7 +148,7 @@ class _DiscussionTabsState extends State<DiscussionTabs>
                   children: [
                     const Icon(Icons.rate_review, size: 20),
                     const SizedBox(width: 8),
-                    const Text('Đánh Giá'),
+                    const Text('Reviews'),
                     if (_reviewStats != null && _reviewStats!.total > 0)
                       Container(
                         margin: const EdgeInsets.only(left: 8),

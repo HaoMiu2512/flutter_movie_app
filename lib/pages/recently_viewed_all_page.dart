@@ -5,6 +5,7 @@ import '../models/recently_viewed.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class RecentlyViewedAllPage extends StatefulWidget {
   const RecentlyViewedAllPage({super.key});
@@ -211,10 +212,11 @@ class _RecentlyViewedAllPageState extends State<RecentlyViewedAllPage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => item.mediaType == 'tv'
+          PageTransitions.slideAndFade(
+            page: item.mediaType == 'tv'
                 ? TvSeriesDetail(id: item.mediaId)
                 : MoviesDetail(id: item.mediaId),
+            duration: const Duration(milliseconds: 350),
           ),
         );
       },

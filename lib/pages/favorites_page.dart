@@ -5,6 +5,7 @@ import '../services/backend_favorites_service.dart';
 import '../details/moviesdetail.dart';
 import '../details/tvseriesdetail.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -80,19 +81,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
     if (favorite.mediaType == 'movie') {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => MoviesDetail(
+        PageTransitions.slideAndFade(
+          page: MoviesDetail(
             id: favorite.mediaId.toString(),
           ),
+          duration: const Duration(milliseconds: 350),
         ),
       ).then((_) => _loadFavorites()); // Refresh after returning
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => TvSeriesDetail(
+        PageTransitions.slideAndFade(
+          page: TvSeriesDetail(
             id: favorite.mediaId.toString(),
           ),
+          duration: const Duration(milliseconds: 350),
         ),
       ).then((_) => _loadFavorites()); // Refresh after returning
     }

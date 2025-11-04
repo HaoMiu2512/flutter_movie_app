@@ -502,7 +502,9 @@ async function getMovieVideos(req, res) {
         type: video.type,
         official: video.official
       }));
+      cachedMovie.lastFetched = new Date(); // ✅ Update timestamp!
       await cachedMovie.save();
+      console.log(`💾 Cached ${cachedMovie.videos.length} videos for movie ${tmdbId}`);
     }
     
     res.json({

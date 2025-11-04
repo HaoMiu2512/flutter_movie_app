@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../main_screen.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String verificationId;
@@ -107,8 +108,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               String username = FirebaseAuth.instance.currentUser?.phoneNumber?.replaceAll(RegExp(r'[^0-9]'), '') ?? 'User';
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => MainScreen(username: username),
+                PageTransitions.fade(
+                  page: MainScreen(username: username),
+                  duration: const Duration(milliseconds: 400),
                 ),
                 (route) => false,
               );
@@ -159,8 +161,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           // Navigate to MainScreen
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (context) => MainScreen(username: username),
+            PageTransitions.fade(
+              page: MainScreen(username: username),
+              duration: const Duration(milliseconds: 400),
             ),
             (route) => false,
           );

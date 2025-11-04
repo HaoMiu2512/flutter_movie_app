@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_movie_app/config/api_config.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_movie_app/details/checker.dart';
+import '../utils/page_transitions.dart';
 
 class Searchbarfunction extends StatefulWidget {
   const Searchbarfunction({super.key});
@@ -264,11 +265,12 @@ class _SearchbarfunctionState extends State<Searchbarfunction> {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => Descriptioncheckui(
+            PageTransitions.slideAndFade(
+              page: Descriptioncheckui(
                 result['id'],
                 result['media_type'],
               ),
+              duration: const Duration(milliseconds: 350),
             ),
           );
         },

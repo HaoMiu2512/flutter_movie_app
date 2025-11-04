@@ -14,6 +14,7 @@ import 'recently_viewed_all_page.dart';
 import 'settings_page.dart';
 import '../LoginPage/login_page.dart';
 import '../widgets/custom_snackbar.dart';
+import '../utils/page_transitions.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -411,8 +412,9 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
+                PageTransitions.slideAndFade(
+                  page: const SettingsPage(),
+                  duration: const Duration(milliseconds: 350),
                 ),
               );
             },
@@ -534,8 +536,9 @@ class _ProfilePageState extends State<ProfilePage> {
             if (mounted) {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
+                PageTransitions.fade(
+                  page: const LoginPage(),
+                  duration: const Duration(milliseconds: 400),
                 ),
                 (route) => false,
               );
@@ -738,10 +741,11 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => item.mediaType == 'tv'
+          PageTransitions.slideAndFade(
+            page: item.mediaType == 'tv'
                 ? TvSeriesDetail(id: item.mediaId)
                 : MoviesDetail(id: item.mediaId),
+            duration: const Duration(milliseconds: 350),
           ),
         );
       },
@@ -856,8 +860,9 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showAllRecentlyViewed() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const RecentlyViewedAllPage(),
+      PageTransitions.slideAndFade(
+        page: const RecentlyViewedAllPage(),
+        duration: const Duration(milliseconds: 350),
       ),
     );
   }
@@ -1289,8 +1294,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const ChangePasswordPage(),
+                    PageTransitions.slideAndFade(
+                      page: const ChangePasswordPage(),
+                      duration: const Duration(milliseconds: 350),
                     ),
                   );
                 },

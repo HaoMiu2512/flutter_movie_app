@@ -369,8 +369,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           Navigator.pop(context); // Close dialog
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
+                            PageTransitions.fade(
+                              page: const LoginPage(),
+                              duration: const Duration(milliseconds: 400),
                             ),
                             (route) => false,
                           );
@@ -519,10 +520,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     onTap: () {
                                       Navigator.push(
                                           context,
-                                          MaterialPageRoute(
-                                              builder: (context) =>
-                                                  Descriptioncheckui(i['id'],
-                                                      i['media_type'])));
+                                          PageTransitions.slideAndFade(
+                                            page: Descriptioncheckui(i['id'],
+                                                  i['media_type']),
+                                            duration: const Duration(milliseconds: 350),
+                                          ));
                                     },
                                     child: Container(
                                         width:
